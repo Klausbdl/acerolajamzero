@@ -37,7 +37,7 @@ RenderSettings:
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
-  m_Sun: {fileID: 0}
+  m_Sun: {fileID: 410087040}
   m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
@@ -372,12 +372,62 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!20 &330585545 stripped
-Camera:
-  m_CorrespondingSourceObject: {fileID: 1475472186042335266, guid: e6d884318951f0240a3836a9f1e4d5e3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2483473450627121343}
+--- !u!1 &381683760
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 381683761}
+  - component: {fileID: 381683762}
+  m_Layer: 0
+  m_Name: Game Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &381683761
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 381683760}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 37.9, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1863552457}
+  - {fileID: 1322308405}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &381683762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 381683760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71eea4078ef571546a98cac9028237af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  weaponData: {fileID: 1863552456}
+  legsData: {fileID: 1322308404}
+  playerController: {fileID: 0}
+  vitality: 0
+  defense: 0
+  agility: 0
+  strength: 0
+  dexterity: 0
+  jump: 0
+  currency: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1182,8 +1232,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1322308403}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 63.23, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 65.1, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1194,7 +1244,7 @@ Transform:
   - {fileID: 1438346743}
   - {fileID: 490372138}
   - {fileID: 308226515}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 381683761}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1438346742
 GameObject:
@@ -1340,7 +1390,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: dc5696853a2b56b4891b85e6b818fe42, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1379,8 +1429,8 @@ Transform:
   m_GameObject: {fileID: 1459664650}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -41.7, y: 0, z: -21.8}
-  m_LocalScale: {x: 6.6304, y: 6.6304, z: 6.6304}
+  m_LocalPosition: {x: -51.88, y: 0, z: -39.64}
+  m_LocalScale: {x: 8.353822, y: 8.353822, z: 8.353822}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1783,7 +1833,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1863552455}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1800,7 +1850,7 @@ Transform:
   - {fileID: 2009903011}
   - {fileID: 274344814}
   - {fileID: 1007998638}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 381683761}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2009903010
 GameObject:
@@ -1885,12 +1935,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!4 &2048711861 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5814205047910186430, guid: e6d884318951f0240a3836a9f1e4d5e3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2483473450627121343}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2076012170
 GameObject:
   m_ObjectHideFlags: 0
@@ -2216,21 +2260,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1105977222641309308, guid: 283be5480fea955409b18f9097c279a0,
-        type: 3}
-      propertyPath: speed
-      value: 15.29
-      objectReference: {fileID: 0}
-    - target: {fileID: 1105977222641309308, guid: 283be5480fea955409b18f9097c279a0,
-        type: 3}
-      propertyPath: camAnchor
-      value: 
-      objectReference: {fileID: 2048711861}
-    - target: {fileID: 1105977222641309308, guid: 283be5480fea955409b18f9097c279a0,
-        type: 3}
-      propertyPath: mainCamera
-      value: 
-      objectReference: {fileID: 330585545}
     - target: {fileID: 1214256453219023719, guid: 283be5480fea955409b18f9097c279a0,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -2286,11 +2315,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Creature
       objectReference: {fileID: 0}
-    - target: {fileID: 7777201674181398758, guid: 283be5480fea955409b18f9097c279a0,
-        type: 3}
-      propertyPath: m_Controller
-      value: 
-      objectReference: {fileID: 9100000, guid: d708b8565bb07274780f662b3bad2a51, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2300,10 +2324,9 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 381683761}
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 1863552457}
-  - {fileID: 1322308405}
   - {fileID: 1459664654}
   - {fileID: 5570094380592102469}
   - {fileID: 2483473450627121343}
