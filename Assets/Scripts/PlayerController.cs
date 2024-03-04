@@ -1,5 +1,4 @@
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -9,13 +8,10 @@ public class PlayerController : MonoBehaviour
     Transform camAnchor;
     Camera mainCamera;
     Animator animator;
+    public Transform[] bones;
 
     [Header("Mesh renderers")]
-    public SkinnedMeshRenderer leftArm;
-    public SkinnedMeshRenderer rightArm;
-    public SkinnedMeshRenderer leftLeg;
-    public SkinnedMeshRenderer rightLeg;
-    public SkinnedMeshRenderer body;
+    public SkinnedMeshRenderer[] bodyParts;
 
     [Header("Camera")]
     [SerializeField] Vector3 followOffset = new Vector3(0, 0, 0);
@@ -33,33 +29,56 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float gravity;
     [SerializeField] float gravityMultiplier = 1;
     float rotationTimer;
-    float rotationDuration = .5f;
+    public float rotationDuration = .5f;
     float rotateLerpSpeed = 10;
+
+    public float rollDuration = .2f;
+    float rollTimer;
     bool rolling = false;
 
     [Header("Combat")]
+    public LayerMask hitableMask;
     bool lockRotation;
     int combo = 0;
+    bool canAttack = true;
     int currAttackSide = -1;
     int lastAttackSide = -1; //0: left, 1: right
+    public float attackDuration = .5f;
     float attackTimer;
-    float attackDuration = .2f;
+    [Range(.01f, 1)] public float leftPunchValue;
+    float leftPunchPercentage;
+    [Range(.01f, 1)] public float rightPunchValue;
+    float rightPunchPercentage;
+    Coroutine punchRoutine;
+    [Range(.01f, 1)] public float leftSwordValue;
+    float leftSwordPercentage;
+    [Range(.01f, 1)] public float rightSwordValue;
+    float rightSwordPercentage;
+    Coroutine swordRoutine;
+    [Range(.01f, 1)] public float leftShootValue;
+    float leftShootPercentage;
+    [Range(.01f, 1)] public float rightShootValue;
+    float rightShootPercentage;
+    Coroutine shootRoutine;
 
     [Header("Attributes")]
     public float maxHp;
     public float curHp;
     public float speed;
     public float damage;
-    public float attackSpeed;
+    public float attackSpeed = 1;
     public float jumpHeight;
 
-    [Range(.01f, 1)] public float punchValue;
-    [Range(.01f, 1)] public float swordValue;
-    [Range(.01f, 1)] public float shootValue;
-
     [Header("Debug")]
-    Vector3 debugPosition;
-    string debugString = "";
+    public float explosionForce = 10;
+    public float explosionUpward = 1;
+    public float[] armsFix = new float[2] { 10, -1};
+    public float[] legsFix = new float[2] { 10, -1 };
+#if UNITY_EDITOR
+    Vector3 debugPosition1;
+    Vector3 debugPosition2;
+    string debugStringUpdate = "";
+#endif
 
     #region animator hashes
     static int speedHash = Animator.StringToHash("Speed");
@@ -69,8 +88,12 @@ public class PlayerController : MonoBehaviour
     static int rollHash = Animator.StringToHash("Roll");
 
     static int comboHash = Animator.StringToHash("Combo");
-    static int combatXHash = Animator.StringToHash("Combat X");
-    static int combatYHash = Animator.StringToHash("Combat Y");
+    static int leftCombatXHash = Animator.StringToHash("Left Combat X");
+    static int leftCombatYHash = Animator.StringToHash("Left Combat Y");
+    static int rightCombatXHash = Animator.StringToHash("Right Combat X");
+    static int rightCombatYHash = Animator.StringToHash("Right Combat Y");
+
+    static int attackSpeedHash = Animator.StringToHash("Attack Speed");
     static int attackLeftHash = Animator.StringToHash("Attack Left");
     static int attackRightHash = Animator.StringToHash("Attack Right");
     #endregion
@@ -89,14 +112,16 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        debugString = "";
+#if UNITY_EDITOR
+        debugStringUpdate = "";
+#endif
 
         ProcessMovement();
         ProcessCamera();
         ProcessCombat();
     }
 
-    private void LateUpdate()
+    private void FixedUpdate()
     {
         //fix zoom on collision
         if (Physics.Linecast(camAnchor.position, camAnchor.position + camAnchor.forward * 10, out RaycastHit hit, groundMask))
@@ -104,6 +129,16 @@ public class PlayerController : MonoBehaviour
         else
             zoom = 10;
         mainCamera.transform.localPosition = new Vector3(0, 0, zoom);
+
+        //fix material sorting
+        for(int i = 0; i < 4; i++)
+        {
+            Vector3 boundsPos;
+            boundsPos = transform.InverseTransformPoint(bones[i].transform.position);
+            boundsPos.z += i <= 1 ? armsFix[1] : legsFix[1];
+            boundsPos.z *= i <= 1 ? armsFix[0] : legsFix[0];
+            bodyParts[i].localBounds = new Bounds(boundsPos, Vector3.one * 2);
+        }
     }
 
     void ProcessCamera()
@@ -146,10 +181,20 @@ public class PlayerController : MonoBehaviour
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * (gravity * gravityMultiplier));
 
         //roll
-        if(Input.GetButtonDown("Fire3") && isGrounded && !rolling)
+        if(Input.GetButtonDown("Fire3") && isGrounded && rollTimer <= 0)
         {
             animator.SetTrigger(rollHash);
-            StartCoroutine(RollRoutine((move.magnitude > 0.1f ? move : transform.forward) * 2, .5f, 0));
+            velocity.y = Mathf.Sqrt(jumpHeight * .2f * -2f * (gravity * gravityMultiplier));
+            rollTimer = rollDuration;
+        }
+
+        if(rollTimer > 0)
+        {
+            Vector3 move = (this.move.magnitude > 0.1f ? this.move : transform.forward) * 2;
+            move *= (rollTimer / rollDuration) + 1;
+            controller.Move(move * speed * Time.deltaTime);
+
+            rollTimer -= Time.deltaTime;
         }
 
         //movement
@@ -159,8 +204,10 @@ public class PlayerController : MonoBehaviour
         
         controller.Move(move * speed * Time.deltaTime * speedMultiplier);
         animator.SetFloat(speedHash, move.magnitude);
-        
-        debugString += $"\nspeed multiplier: {speedMultiplier}"; //------------------------------------------------------DEBUG
+
+#if UNITY_EDITOR
+        debugStringUpdate += $"\nspeed multiplier: {speedMultiplier}"; //------------------------------------------------------DEBUG
+#endif
 
         //rotation
         if (move.magnitude > 0.1f)
@@ -184,35 +231,60 @@ public class PlayerController : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.R))
             lockRotation = !lockRotation;
-        debugString += $"\nlock rotation: {lockRotation}";
+#if UNITY_EDITOR
+        debugStringUpdate += $"\nlock rotation: {lockRotation}";
+#endif
 
         //combat animator weights
-        float total = punchValue + swordValue + shootValue;
-        float punch = punchValue / total;
-        float sword = swordValue / total;
-        float shoot = shootValue / total;
-        //debugString = $"p:{punch.ToString("0.##")}% sw:{sword.ToString("0.##")}% sh:{shoot.ToString("0.##")}%";
+        #region left arm
+        float total = leftPunchValue + leftSwordValue + leftShootValue;
+        leftPunchPercentage = leftPunchValue / total;
+        leftSwordPercentage = leftSwordValue / total;
+        leftShootPercentage = leftShootValue / total;
+#if UNITY_EDITOR
+        debugStringUpdate += $"\np:{leftPunchPercentage.ToString("0.##")}% sw:{leftSwordPercentage.ToString("0.##")}% sh:{leftShootPercentage.ToString("0.##")}%";
+#endif
         
-        float combatX = punch * 0 + sword * 0.43301f + shoot * -0.43301f;
-        float combatY = punch * 0.5f + sword * -.25f + shoot * -.25f;
-        animator.SetFloat(combatXHash, combatX);
-        animator.SetFloat(combatYHash, combatY);
+        float combatX = leftPunchPercentage * 0 + leftSwordPercentage * 0.43301f + leftShootPercentage * -0.43301f;
+        float combatY = leftPunchPercentage * 0.5f + leftSwordPercentage * -.25f + leftShootPercentage * -.25f;
+        animator.SetFloat(leftCombatXHash, combatX);
+        animator.SetFloat(leftCombatYHash, combatY);
+        #endregion
 
-        bool attackedLeft = Input.GetButtonDown("Fire1");
-        bool attackedRight = Input.GetButtonDown("Fire2");
+        #region right arm
+        total = rightPunchValue + rightSwordValue + rightShootValue;
+        rightPunchPercentage = rightPunchValue / total;
+        rightSwordPercentage = rightSwordValue / total;
+        rightShootPercentage = rightShootValue / total;
+#if UNITY_EDITOR
+        debugStringUpdate += $"\np:{rightPunchPercentage.ToString("0.##")}% sw:{rightSwordPercentage.ToString("0.##")}% sh:{rightShootPercentage.ToString("0.##")}%";
+#endif
 
-        if ((attackedLeft || attackedRight) && attackTimer <= 0)
+        combatX = rightPunchPercentage * 0 + rightSwordPercentage * 0.43301f + rightShootPercentage * -0.43301f;
+        combatY = rightPunchPercentage * 0.5f + rightSwordPercentage * -.25f + rightShootPercentage * -.25f;
+        animator.SetFloat(rightCombatXHash, combatX);
+        animator.SetFloat(rightCombatYHash, combatY);
+        #endregion
+
+        bool attackedLeft = Input.GetButton("Fire1");
+        bool attackedRight = Input.GetButton("Fire2");
+
+        if ((attackedLeft || attackedRight) && canAttack)
         {
             currAttackSide = attackedLeft ? 0 : 1;
-            ProcessAttack();
+            canAttack = false;
+            ProcessCombo();
+            animator.SetFloat(attackSpeedHash, attackSpeed);
             animator.SetTrigger(attackedLeft ? attackLeftHash : attackRightHash);
             attackTimer = attackDuration;
             rotationTimer = rotationDuration;
         }
 
+        //push forward when attacking
         if(attackTimer > 0)
         {
             Vector3 move = lockRotation ? (this.move.magnitude > 0.1f ? this.move : camForward) : transform.forward;
+            move *= (attackTimer/attackDuration) + this.move.normalized.magnitude;
             controller.Move(move * speed * Time.deltaTime);
 
             if (lockRotation)
@@ -226,20 +298,23 @@ public class PlayerController : MonoBehaviour
 
         if(rotationTimer > 0)
             rotationTimer -= Time.deltaTime;
-
-        debugString += $"\nattack timer: {attackTimer}\nrotation timer: {rotationTimer}";
+#if UNITY_EDITOR
+        debugStringUpdate += $"\nattack timer: {attackTimer}\nrotation timer: {rotationTimer}";
+        debugStringUpdate += $"\ncurrent attack: {currAttackSide}    last attack: {lastAttackSide}";
+        debugStringUpdate += $"\ncan attack: {canAttack}";
+#endif
     }
 
-    void ProcessAttack()
+    void ProcessCombo()
     {
         animator.SetInteger(comboHash, combo);
-        combo++;
+        if (combo == 1) combo = 2;
+        else if (combo == 2 || combo == 0) combo = 1;
 
         if (lastAttackSide == -1) lastAttackSide = currAttackSide;
         
         if (currAttackSide != lastAttackSide)
             combo = 1;
-        if (combo == 3) combo = 1;
         
         lastAttackSide = currAttackSide;
     }
@@ -250,34 +325,123 @@ public class PlayerController : MonoBehaviour
         combo = 0;
         lastAttackSide = -1;
         currAttackSide = -1;
+        canAttack = true;
+    }
+    public void CanAttackAgain(int i)
+    {
+        bool left = currAttackSide == 0;
+        switch (i)
+        {
+            case 0: if((left ? leftPunchPercentage : rightPunchPercentage) >= 0.33f) canAttack = true; break;
+            case 1: if((left ? leftSwordPercentage : rightSwordPercentage) >= 0.33f) canAttack = true; break;
+            case 2: if((left ? leftShootPercentage : rightShootPercentage) >= 0.33f) canAttack = true; break;
+        }
+    }
+    public void AttackCollider(string args)
+    {
+        //args: attackType_on/off
+        if (args.Split('_').Length != 2) return;
+
+        string type = args.Split('_')[0];
+        string state = args.Split('_')[1];
+        
+        bool left = currAttackSide == 0;
+        
+        switch (type)
+        {
+            case "punch":
+                if((left ? leftPunchPercentage : rightPunchPercentage) >= 0.33f)
+                {
+                    if (state == "on")
+                        punchRoutine = StartCoroutine(AttackHitbox(0));
+                    else
+                        StopCoroutine(punchRoutine);
+                }
+                break;
+            case "sword":
+                if ((left ? leftSwordPercentage : rightSwordPercentage) >= 0.33f)
+                {
+                    if (state == "on")
+                        swordRoutine = StartCoroutine(AttackHitbox(1));
+                    else
+                        StopCoroutine(swordRoutine);
+                }
+                break;
+            case "shoot":
+                if ((left ? leftShootPercentage : rightShootPercentage) >= 0.33f)
+                    if (state == "on")
+                        shootRoutine = StartCoroutine(AttackHitbox(2));
+                break;
+        }
     }
 
-    IEnumerator RollRoutine(Vector3 direction, float duration = 0.2f, float alphaSpeed = 3)
+    IEnumerator AttackHitbox(int i)
     {
-        if (rolling) yield break;
+        var tick = new WaitForSeconds(.5f);
+        float countDown = 1; //measure to stop coroutine
 
-        rolling = true;
-        float alpha = 1;
-        float tick = 0;
-        while (tick < duration)
+        Transform boneToUse = currAttackSide == 0 ? bones[0] : bones[1];
+        float armDistance = 0;
+        float radius = .5f;
+
+        switch (i)
         {
-            Vector3 move = direction * alpha;
-            controller.Move(move * speed * Time.deltaTime);
-            tick += Time.deltaTime;
-            alpha -= Time.deltaTime * alphaSpeed;
-            if (alpha < 0) alpha = 0;
-            yield return null;
+            default:
+            case 0:
+                armDistance = 3;
+                radius = .7f;
+                break;
+            case 1:
+                armDistance = 4;
+                radius = 1.3f;
+                break;
+            case 2:
+                break;
         }
 
-        rolling = false;
-    }
+        if(i != 2) //do collider stuff
+        {
+            RaycastHit[] results = new RaycastHit[10];
 
+            while (countDown > 0)
+            {
+                Vector3 p1 = boneToUse.position + (currAttackSide == 0 ? -boneToUse.right : boneToUse.right);
+                Vector3 p2 = p1 + (boneToUse.up * armDistance);
+
+                int hitCount = Physics.CapsuleCastNonAlloc(p1, p2, radius, boneToUse.up, results, Vector3.Distance(p1, p2), hitableMask);
+                
+                if(hitCount > 0)
+                    for (int j = 0; j < results.Length; j++)
+                        if (results[j].collider != null)
+                            if (results[j].collider.TryGetComponent(out IDamagable hitable))
+                            {
+                                hitable.Damage(1); //TODO: change to damage
+                                Vector3 impulseForce = (results[j].transform.position - transform.position).normalized;
+                                impulseForce *= explosionForce;
+                                impulseForce.y = explosionUpward;
+#if UNITY_EDITOR
+                                debugPosition1 = results[j].transform.position;
+                                debugPosition2 = debugPosition1 + impulseForce;
+#endif
+                                results[j].rigidbody.AddForce(impulseForce, ForceMode.Impulse);
+                            }                
+                countDown -= Time.deltaTime;
+                yield return tick;
+            }
+        }
+        else //shoot stuff
+        {
+
+        }
+    }
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireSphere(debugPosition, 1);
+        Gizmos.DrawWireSphere(debugPosition1, 1);
+        Gizmos.DrawWireSphere(debugPosition2, 1);
+        Gizmos.DrawLine(debugPosition1, debugPosition2);
     }
 
-#if UNITY_EDITOR
     private void OnGUI()
     {
         Rect labelRect = new Rect(100, 100, 600, 1000);
@@ -285,7 +449,7 @@ public class PlayerController : MonoBehaviour
         GUI.skin.label.fontSize = 24;
         string debugtext = "";
         debugtext += $"combo: {combo}";
-        debugtext += $"\ndebug string:\n{debugString}";
+        debugtext += $"\ndebug string:\n{debugStringUpdate}";
 
         GUI.Label(labelRect, debugtext);
     }

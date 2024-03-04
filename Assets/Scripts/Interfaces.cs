@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public interface IInteractable
 {
     public void Interact();
@@ -5,5 +7,7 @@ public interface IInteractable
 
 public interface IDamagable
 {
-    public void Damage();
+    //public abstract void Damage();
+    
+    public void Damage(float damage);
 }
