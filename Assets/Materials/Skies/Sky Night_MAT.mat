@@ -112,8 +112,8 @@ Material:
     m_Floats:
     - _Alpha: 0.99423164
     - _Blend: 0
-    - _CloudOpacity: 0.029
-    - _Exposure1: 1
+    - _CloudOpacity: 0.101
+    - _Exposure1: 1.05
     - _Exposure2: 0
     - _Exposure3: 0
     - _Glossiness: 0.5
@@ -129,7 +129,7 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Tint: {r: 0.5, g: 0.5, b: 0.5, a: 0.5019608}
-    - _Tint1: {r: 0.572, g: 0.572, b: 0.572, a: 0}
+    - _Tint1: {r: 1, g: 1, b: 1, a: 0}
     - _Tint2: {r: 1, g: 1, b: 1, a: 0}
     - _Tint3: {r: 1, g: 1, b: 1, a: 0}
   m_BuildTextureStacks: []

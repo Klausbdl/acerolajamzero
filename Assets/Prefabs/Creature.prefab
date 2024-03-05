@@ -440,25 +440,26 @@ MonoBehaviour:
   isGrounded: 0
   gravity: -9.8
   gravityMultiplier: 2
-  rotationDuration: 0.5
   rollDuration: 0.4
   hitableMask:
     serializedVersion: 2
     m_Bits: 128
   attackDuration: 0.5
   leftPunchValue: 1
-  rightPunchValue: 0
   leftSwordValue: 0
-  rightSwordValue: 1
   leftShootValue: 0
+  rightPunchValue: 0
+  rightSwordValue: 1
   rightShootValue: 0
+  bulletPrefab: {fileID: 748191493283317312, guid: adda3681fff0deb42a1e940f79e9eff5,
+    type: 3}
   maxHp: 0
   curHp: 0
   speed: 10
   damage: 0
   attackSpeed: 1
   jumpHeight: 4
-  explosionForce: 3
+  explosionForce: 6
   explosionUpward: 4
   armsFix:
   - 3
@@ -466,6 +467,7 @@ MonoBehaviour:
   legsFix:
   - 2
   - -0.13
+  shootHeightOffset: 0.25
 --- !u!143 &4645079175741726156
 CharacterController:
   m_ObjectHideFlags: 0

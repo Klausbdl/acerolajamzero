@@ -16,6 +16,7 @@ public class Enemy : MonoBehaviour, IDamagable
     public float recoverDuration = 3;
     public float recoverTimer;
 
+    //TODO: timer of being immune from getting stunned?
 
     public LayerMask groundLayer;
 
@@ -37,7 +38,7 @@ public class Enemy : MonoBehaviour, IDamagable
             GoToDestination(GameManager.Instance.playerController.transform.position);
     }
 
-    public virtual void Damage(float damage)
+    public virtual void Damage(float damage, float force, float upward)
     {
         hp -= damage;
 
@@ -46,8 +47,16 @@ public class Enemy : MonoBehaviour, IDamagable
             Destroy(gameObject);
         }
 
+        recoverTimer += .1f;
+
         if (canBeHit)
             StartCoroutine(TakeDamage(damage));
+
+        Vector3 impulseForce = (transform.position - GameManager.Instance.playerController.transform.position).normalized;
+        impulseForce *= force;
+        impulseForce.y = upward;
+
+        rb.AddForce(impulseForce, ForceMode.Impulse);
     }
 
     IEnumerator TakeDamage(float damage)
@@ -108,6 +117,7 @@ public class Enemy : MonoBehaviour, IDamagable
         GUI.color = Color.green;
         GUI.skin.label.fontSize = 24;
         string s = rb.velocity.magnitude.ToString();
+        s += $"\n {hp}";
         s += "\n" + debugString;
 
         GUI.Label(labelRect, s);

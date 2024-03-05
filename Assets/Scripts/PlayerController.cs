@@ -24,17 +24,14 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundMask;
     float speedMultiplier = 1;
     Vector3 velocity;
-    Vector3 move;
+    Vector3 inputDir;
+    Vector3 lastDir;
     [SerializeField] bool isGrounded;
     [SerializeField] float gravity;
     [SerializeField] float gravityMultiplier = 1;
-    float rotationTimer;
-    public float rotationDuration = .5f;
     float rotateLerpSpeed = 10;
-
     public float rollDuration = .2f;
     float rollTimer;
-    bool rolling = false;
 
     [Header("Combat")]
     public LayerMask hitableMask;
@@ -46,20 +43,19 @@ public class PlayerController : MonoBehaviour
     public float attackDuration = .5f;
     float attackTimer;
     [Range(.01f, 1)] public float leftPunchValue;
-    float leftPunchPercentage;
-    [Range(.01f, 1)] public float rightPunchValue;
-    float rightPunchPercentage;
-    Coroutine punchRoutine;
     [Range(.01f, 1)] public float leftSwordValue;
-    float leftSwordPercentage;
-    [Range(.01f, 1)] public float rightSwordValue;
-    float rightSwordPercentage;
-    Coroutine swordRoutine;
     [Range(.01f, 1)] public float leftShootValue;
-    float leftShootPercentage;
+    [Space(4)]
+    [Range(.01f, 1)] public float rightPunchValue;
+    [Range(.01f, 1)] public float rightSwordValue;
     [Range(.01f, 1)] public float rightShootValue;
+    float leftPunchPercentage;
+    float leftSwordPercentage;
+    float leftShootPercentage;
+    float rightPunchPercentage;
+    float rightSwordPercentage;
     float rightShootPercentage;
-    Coroutine shootRoutine;
+    public GameObject bulletPrefab;
 
     [Header("Attributes")]
     public float maxHp;
@@ -74,6 +70,7 @@ public class PlayerController : MonoBehaviour
     public float explosionUpward = 1;
     public float[] armsFix = new float[2] { 10, -1};
     public float[] legsFix = new float[2] { 10, -1 };
+    public float shootHeightOffset = 0;
 #if UNITY_EDITOR
     Vector3 debugPosition1;
     Vector3 debugPosition2;
@@ -115,10 +112,137 @@ public class PlayerController : MonoBehaviour
 #if UNITY_EDITOR
         debugStringUpdate = "";
 #endif
-
-        ProcessMovement();
         ProcessCamera();
-        ProcessCombat();
+
+        #region ground check---------------------------------------------
+        isGrounded = Physics.CheckSphere(transform.position + new Vector3(0, .9f, 0), 1, groundMask);
+        animator.SetBool(groundedHash, isGrounded);
+        #endregion
+
+        #region direction---------------------------------------------
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
+
+        camForward = mainCamera.transform.forward;
+        camForward.y = 0;
+        camForward.Normalize();
+
+        inputDir = mainCamera.transform.right * x + camForward * z;
+        inputDir.y = 0;
+
+        Vector3 move = inputDir;
+        Quaternion targetRotation = Quaternion.LookRotation(inputDir != Vector3.zero ? inputDir : transform.forward);
+        bool aim = Input.GetAxis("Aim L") > 0 || Input.GetAxis("Aim R") > 0;
+        #endregion
+
+        UpdateModulePercentages(); //move this to when the player starts instead of update
+
+        #region combat---------------------------------------------
+        bool attackedLeft = Input.GetButton("Fire1");
+        bool attackedRight = Input.GetButton("Fire2");
+
+        //if attack
+        bool meleeAttack = attackedLeft ? leftShootPercentage < .33f : rightShootPercentage < .33f; //only push if not gun module
+        
+        if ((attackedLeft || attackedRight) && canAttack)
+        {
+            canAttack = false;
+            
+            currAttackSide = attackedLeft ? 0 : 1;
+            
+            ProcessCombo();
+            
+            animator.SetFloat(attackSpeedHash, attackSpeed);
+            animator.SetTrigger(attackedLeft ? attackLeftHash : attackRightHash);
+            
+            attackTimer = attackDuration;
+            lockRotation = !meleeAttack;
+            lastDir = Mathf.Abs(x) > .5f || Mathf.Abs(z) > .5f ? inputDir : transform.forward;
+        }
+
+        if (attackTimer > 0)
+        {
+            if (!lockRotation)
+            {
+                move = Mathf.Abs(x) > 0 || Mathf.Abs(z) > 0 ? lastDir : transform.forward;
+                move *= (attackTimer / attackDuration) + inputDir.normalized.magnitude;
+
+                if(move != Vector3.zero)
+                    targetRotation = Quaternion.LookRotation(lastDir.normalized + inputDir.normalized * .1f);
+            }
+            else
+                targetRotation = Quaternion.LookRotation(camForward);
+            
+            if(aim)
+                targetRotation = Quaternion.LookRotation(camForward);
+
+            attackTimer -= Time.deltaTime;
+
+            if (attackTimer <= 0)
+                lockRotation = false;
+        }
+        #endregion
+
+        #region move body---------------------------------------------
+
+        #region jump
+        if (Input.GetButtonDown("Jump") && isGrounded)
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * (gravity * gravityMultiplier));
+        #endregion
+
+        #region roll
+        if (Input.GetButtonDown("Fire3") && isGrounded && rollTimer <= 0)
+        {
+            rollTimer = rollDuration;
+            canAttack = false;
+            animator.SetTrigger(rollHash);
+            
+            velocity.y = Mathf.Sqrt(jumpHeight * .2f * -2f * (gravity * gravityMultiplier));
+            lastDir = inputDir != Vector3.zero ? inputDir : transform.forward;
+        }
+
+        if (rollTimer > 0)
+        {
+            move = (lastDir != Vector3.zero ? lastDir : transform.forward) * 2;
+            move *= (rollTimer / rollDuration) + 1;
+
+            rollTimer -= Time.deltaTime;
+
+            if(rollTimer <= 0)
+                lastDir = Vector3.zero;
+        }
+        #endregion
+
+        //speedMultiplier = Mathf.Lerp(speedMultiplier,
+        //    rolling ? 0.2f : (attackTimer > 0 && meleeAttack ? 0 : 1),
+        //    Time.deltaTime * (rolling ? 10 : 3));
+#if UNITY_EDITOR
+        debugStringUpdate += $"\nx: {x} z: {z}";
+        debugStringUpdate += $"\nroll timer: {rollTimer}";
+        debugStringUpdate += $"\ninput: {inputDir}";
+        debugStringUpdate += $"\nmove: {move}";
+        debugStringUpdate += $"\nlast dir: {lastDir}";
+#endif
+        controller.Move(move * speed * Time.deltaTime * speedMultiplier);
+        animator.SetFloat(speedHash, inputDir.magnitude);
+
+        #region apply gravity
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -5f;
+        }
+
+        velocity.y += (gravity * gravityMultiplier) * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+
+        animator.SetFloat(yVelHash, UtilsFunctions.Map(-5, 5, -1, 1, velocity.y));
+        #endregion
+
+        #endregion
+
+        #region rotate body---------------------------------------------
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotateLerpSpeed * Time.deltaTime);
+        #endregion
     }
 
     private void FixedUpdate()
@@ -161,81 +285,21 @@ public class PlayerController : MonoBehaviour
             camAnchor.rotation = Quaternion.Euler(xRot, yRot, 0);
         }
     }
-    void ProcessMovement()
+    void ProcessCombo()
     {
-        isGrounded = Physics.CheckSphere(transform.position + new Vector3(0, .9f, 0), 1, groundMask);
-        animator.SetBool(groundedHash, isGrounded);
+        animator.SetInteger(comboHash, combo);
+        if (combo == 1) combo = 2;
+        else if (combo == 2 || combo == 0) combo = 1;
 
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
-
-        camForward = mainCamera.transform.forward;
-        camForward.y = 0;
-        camForward.Normalize();
-
-        move = mainCamera.transform.right * x + camForward * z;
-        move.y = 0;
-
-        // jump
-        if (Input.GetButtonDown("Jump") && isGrounded)
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * (gravity * gravityMultiplier));
-
-        //roll
-        if(Input.GetButtonDown("Fire3") && isGrounded && rollTimer <= 0)
-        {
-            animator.SetTrigger(rollHash);
-            velocity.y = Mathf.Sqrt(jumpHeight * .2f * -2f * (gravity * gravityMultiplier));
-            rollTimer = rollDuration;
-        }
-
-        if(rollTimer > 0)
-        {
-            Vector3 move = (this.move.magnitude > 0.1f ? this.move : transform.forward) * 2;
-            move *= (rollTimer / rollDuration) + 1;
-            controller.Move(move * speed * Time.deltaTime);
-
-            rollTimer -= Time.deltaTime;
-        }
-
-        //movement
-        speedMultiplier = Mathf.Lerp(speedMultiplier,
-            rolling ? 0.2f : (attackTimer > 0 ? 0 : 1),
-            Time.deltaTime * (rolling ? 10 : 3));
+        if (lastAttackSide == -1) lastAttackSide = currAttackSide;
         
-        controller.Move(move * speed * Time.deltaTime * speedMultiplier);
-        animator.SetFloat(speedHash, move.magnitude);
-
-#if UNITY_EDITOR
-        debugStringUpdate += $"\nspeed multiplier: {speedMultiplier}"; //------------------------------------------------------DEBUG
-#endif
-
-        //rotation
-        if (move.magnitude > 0.1f)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(rotationTimer > 0 && lockRotation ? camForward : move, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotateLerpSpeed * Time.deltaTime);
-        }
-
-        //gravity
-        if (isGrounded && velocity.y < 0)
-        {
-            velocity.y = -5f;
-        }
-
-        velocity.y += (gravity * gravityMultiplier) * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
-
-        animator.SetFloat(yVelHash, UtilsFunctions.Map(-5, 5, -1, 1, velocity.y));
+        if (currAttackSide != lastAttackSide)
+            combo = 1;
+        
+        lastAttackSide = currAttackSide;
     }
-    void ProcessCombat()
+    void UpdateModulePercentages()
     {
-        if(Input.GetKeyDown(KeyCode.R))
-            lockRotation = !lockRotation;
-#if UNITY_EDITOR
-        debugStringUpdate += $"\nlock rotation: {lockRotation}";
-#endif
-
-        //combat animator weights
         #region left arm
         float total = leftPunchValue + leftSwordValue + leftShootValue;
         leftPunchPercentage = leftPunchValue / total;
@@ -243,8 +307,7 @@ public class PlayerController : MonoBehaviour
         leftShootPercentage = leftShootValue / total;
 #if UNITY_EDITOR
         debugStringUpdate += $"\np:{leftPunchPercentage.ToString("0.##")}% sw:{leftSwordPercentage.ToString("0.##")}% sh:{leftShootPercentage.ToString("0.##")}%";
-#endif
-        
+#endif        
         float combatX = leftPunchPercentage * 0 + leftSwordPercentage * 0.43301f + leftShootPercentage * -0.43301f;
         float combatY = leftPunchPercentage * 0.5f + leftSwordPercentage * -.25f + leftShootPercentage * -.25f;
         animator.SetFloat(leftCombatXHash, combatX);
@@ -259,64 +322,11 @@ public class PlayerController : MonoBehaviour
 #if UNITY_EDITOR
         debugStringUpdate += $"\np:{rightPunchPercentage.ToString("0.##")}% sw:{rightSwordPercentage.ToString("0.##")}% sh:{rightShootPercentage.ToString("0.##")}%";
 #endif
-
         combatX = rightPunchPercentage * 0 + rightSwordPercentage * 0.43301f + rightShootPercentage * -0.43301f;
         combatY = rightPunchPercentage * 0.5f + rightSwordPercentage * -.25f + rightShootPercentage * -.25f;
         animator.SetFloat(rightCombatXHash, combatX);
         animator.SetFloat(rightCombatYHash, combatY);
         #endregion
-
-        bool attackedLeft = Input.GetButton("Fire1");
-        bool attackedRight = Input.GetButton("Fire2");
-
-        if ((attackedLeft || attackedRight) && canAttack)
-        {
-            currAttackSide = attackedLeft ? 0 : 1;
-            canAttack = false;
-            ProcessCombo();
-            animator.SetFloat(attackSpeedHash, attackSpeed);
-            animator.SetTrigger(attackedLeft ? attackLeftHash : attackRightHash);
-            attackTimer = attackDuration;
-            rotationTimer = rotationDuration;
-        }
-
-        //push forward when attacking
-        if(attackTimer > 0)
-        {
-            Vector3 move = lockRotation ? (this.move.magnitude > 0.1f ? this.move : camForward) : transform.forward;
-            move *= (attackTimer/attackDuration) + this.move.normalized.magnitude;
-            controller.Move(move * speed * Time.deltaTime);
-
-            if (lockRotation)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(camForward, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 50 * Time.deltaTime);
-            }
-
-            attackTimer -= Time.deltaTime;
-        }
-
-        if(rotationTimer > 0)
-            rotationTimer -= Time.deltaTime;
-#if UNITY_EDITOR
-        debugStringUpdate += $"\nattack timer: {attackTimer}\nrotation timer: {rotationTimer}";
-        debugStringUpdate += $"\ncurrent attack: {currAttackSide}    last attack: {lastAttackSide}";
-        debugStringUpdate += $"\ncan attack: {canAttack}";
-#endif
-    }
-
-    void ProcessCombo()
-    {
-        animator.SetInteger(comboHash, combo);
-        if (combo == 1) combo = 2;
-        else if (combo == 2 || combo == 0) combo = 1;
-
-        if (lastAttackSide == -1) lastAttackSide = currAttackSide;
-        
-        if (currAttackSide != lastAttackSide)
-            combo = 1;
-        
-        lastAttackSide = currAttackSide;
     }
 
     //called from animation trigger
@@ -337,49 +347,29 @@ public class PlayerController : MonoBehaviour
             case 2: if((left ? leftShootPercentage : rightShootPercentage) >= 0.33f) canAttack = true; break;
         }
     }
-    public void AttackCollider(string args)
-    {
-        //args: attackType_on/off
-        if (args.Split('_').Length != 2) return;
-
-        string type = args.Split('_')[0];
-        string state = args.Split('_')[1];
-        
+    public void AttackCollider(int type) {
+        //args: attackType        
         bool left = currAttackSide == 0;
         
         switch (type)
         {
-            case "punch":
+            case 0:
                 if((left ? leftPunchPercentage : rightPunchPercentage) >= 0.33f)
-                {
-                    if (state == "on")
-                        punchRoutine = StartCoroutine(AttackHitbox(0));
-                    else
-                        StopCoroutine(punchRoutine);
-                }
+                    AttackHitbox(0);                
                 break;
-            case "sword":
+            case 1:
                 if ((left ? leftSwordPercentage : rightSwordPercentage) >= 0.33f)
-                {
-                    if (state == "on")
-                        swordRoutine = StartCoroutine(AttackHitbox(1));
-                    else
-                        StopCoroutine(swordRoutine);
-                }
+                    AttackHitbox(1);
                 break;
-            case "shoot":
+            case 2:
                 if ((left ? leftShootPercentage : rightShootPercentage) >= 0.33f)
-                    if (state == "on")
-                        shootRoutine = StartCoroutine(AttackHitbox(2));
+                    AttackHitbox(2);
                 break;
         }
     }
 
-    IEnumerator AttackHitbox(int i)
+    void AttackHitbox(int i)
     {
-        var tick = new WaitForSeconds(.5f);
-        float countDown = 1; //measure to stop coroutine
-
         Transform boneToUse = currAttackSide == 0 ? bones[0] : bones[1];
         float armDistance = 0;
         float radius = .5f;
@@ -403,43 +393,44 @@ public class PlayerController : MonoBehaviour
         {
             RaycastHit[] results = new RaycastHit[10];
 
-            while (countDown > 0)
-            {
-                Vector3 p1 = boneToUse.position + (currAttackSide == 0 ? -boneToUse.right : boneToUse.right);
-                Vector3 p2 = p1 + (boneToUse.up * armDistance);
+            Vector3 p1 = boneToUse.position + (currAttackSide == 0 ? -boneToUse.right : boneToUse.right);
+            Vector3 p2 = p1 + (boneToUse.up * armDistance);
 
-                int hitCount = Physics.CapsuleCastNonAlloc(p1, p2, radius, boneToUse.up, results, Vector3.Distance(p1, p2), hitableMask);
-                
-                if(hitCount > 0)
-                    for (int j = 0; j < results.Length; j++)
-                        if (results[j].collider != null)
-                            if (results[j].collider.TryGetComponent(out IDamagable hitable))
-                            {
-                                hitable.Damage(1); //TODO: change to damage
-                                Vector3 impulseForce = (results[j].transform.position - transform.position).normalized;
-                                impulseForce *= explosionForce;
-                                impulseForce.y = explosionUpward;
-#if UNITY_EDITOR
-                                debugPosition1 = results[j].transform.position;
-                                debugPosition2 = debugPosition1 + impulseForce;
-#endif
-                                results[j].rigidbody.AddForce(impulseForce, ForceMode.Impulse);
-                            }                
-                countDown -= Time.deltaTime;
-                yield return tick;
-            }
+            int hitCount = Physics.CapsuleCastNonAlloc(p1, p2, radius, boneToUse.up, results, Vector3.Distance(p1, p2), hitableMask);
+
+            if (hitCount > 0)
+                for (int j = 0; j < results.Length; j++)
+                    if (results[j].collider != null)
+                        if (results[j].collider.TryGetComponent(out IDamagable hitable))
+                            hitable.Damage(1, explosionForce, explosionUpward); //TODO: change to damage
         }
         else //shoot stuff
         {
-
+            Vector3 dir = lockRotation ?
+                (transform.forward + new Vector3(0, -camAnchor.forward.y + shootHeightOffset, 0)).normalized
+                : transform.forward;
+            Bullet newBullet = Instantiate(bulletPrefab, boneToUse.position + boneToUse.up, Quaternion.LookRotation(dir)).GetComponent<Bullet>();
+            newBullet.SetBullet(1, 100, dir);
         }
     }
+
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
         Gizmos.DrawWireSphere(debugPosition1, 1);
         Gizmos.DrawWireSphere(debugPosition2, 1);
         Gizmos.DrawLine(debugPosition1, debugPosition2);
+        Gizmos.color = Color.red;
+        if (camAnchor)
+        {
+            Vector3 point1 = bones[1].position;
+            Vector3 point2 = point1 + (transform.forward + new Vector3(0, -camAnchor.forward.y + shootHeightOffset, 0)).normalized * 3;
+            Gizmos.DrawLine(point1, point2);
+            Gizmos.DrawWireSphere(point2, .3f);
+        }
+        
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, transform.position + inputDir);
     }
 
     private void OnGUI()

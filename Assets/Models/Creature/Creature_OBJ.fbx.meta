@@ -139,14 +139,7 @@ ModelImporter:
       events:
       - time: 0.2033195
         functionName: AttackCollider
-        data: punch_on
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.5352697
-        functionName: AttackCollider
-        data: punch_off
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -189,14 +182,7 @@ ModelImporter:
       events:
       - time: 0.13068181
         functionName: AttackCollider
-        data: punch_on
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.48639664
-        functionName: AttackCollider
-        data: punch_off
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -235,14 +221,48 @@ ModelImporter:
       heightFromFeet: 0
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
-      curves: []
+      curves:
+      - name: Leg Weight
+        curve:
+          serializedVersion: 2
+          curve:
+          - serializedVersion: 3
+            time: 0
+            value: 1
+            inSlope: 0
+            outSlope: 0
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0
+          - serializedVersion: 3
+            time: 0.6902896
+            value: 1
+            inSlope: 0.0024836361
+            outSlope: 0.0024186387
+            tangentMode: 1
+            weightedMode: 0
+            inWeight: 0
+            outWeight: 0.388634
+          - serializedVersion: 3
+            time: 1
+            value: 0
+            inSlope: -7.2244544
+            outSlope: -7.2244544
+            tangentMode: 0
+            weightedMode: 0
+            inWeight: 0.07356317
+            outWeight: 0.33333334
+          preInfinity: 2
+          postInfinity: 2
+          rotationOrder: 4
       events:
       - time: 0.041493777
         functionName: AttackCollider
-        data: shoot_on
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
-        intParameter: 0
+        intParameter: 2
         messageOptions: 0
       - time: 0.9210185
         functionName: CanAttackAgain
@@ -282,17 +302,10 @@ ModelImporter:
       events:
       - time: 0.30263376
         functionName: AttackCollider
-        data: sword_on
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.46058092
-        functionName: AttackCollider
-        data: sword_off
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
+        intParameter: 1
         messageOptions: 0
       - time: 0.74694437
         functionName: CanAttackAgain
@@ -332,17 +345,10 @@ ModelImporter:
       events:
       - time: 0.1979821
         functionName: AttackCollider
-        data: sword_on
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.41908714
-        functionName: AttackCollider
-        data: sword_off
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
+        intParameter: 1
         messageOptions: 0
       - time: 0.7470048
         functionName: CanAttackAgain
@@ -382,14 +388,7 @@ ModelImporter:
       events:
       - time: 0.20738636
         functionName: AttackCollider
-        data: punch_on
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.53933656
-        functionName: AttackCollider
-        data: punch_off
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -432,14 +431,7 @@ ModelImporter:
       events:
       - time: 0.13352273
         functionName: AttackCollider
-        data: punch_on
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.48923755
-        functionName: AttackCollider
-        data: punch_off
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -482,10 +474,10 @@ ModelImporter:
       events:
       - time: 0.053977273
         functionName: AttackCollider
-        data: shoot_on
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
-        intParameter: 0
+        intParameter: 2
         messageOptions: 0
       - time: 0.9162593
         functionName: CanAttackAgain
@@ -525,17 +517,10 @@ ModelImporter:
       events:
       - time: 0.31036803
         functionName: AttackCollider
-        data: sword_on
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.46965766
-        functionName: AttackCollider
-        data: sword_off
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
+        intParameter: 1
         messageOptions: 0
       - time: 0.74773383
         functionName: CanAttackAgain
@@ -575,17 +560,10 @@ ModelImporter:
       events:
       - time: 0.20583732
         functionName: AttackCollider
-        data: sword_on
+        data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
-      - time: 0.41852129
-        functionName: AttackCollider
-        data: sword_off
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
+        intParameter: 1
         messageOptions: 0
       - time: 0.7490141
         functionName: CanAttackAgain

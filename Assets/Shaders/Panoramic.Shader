@@ -9,6 +9,7 @@ Shader "Skybox/Panoramic" {
 		[Gamma] _Exposure2("Cloud Exposure", Range(0, 8)) = 1.0
 		_Rotation1("Rotation 1", Range(0, 360)) = 0
 		_Rotation2("Cloud Rotation", Range(0, 360)) = 0
+		_RotationSpeed("Cloud Rotation Speed", Float) = 0
 		[NoScaleOffset] _Texture1("Texture 1", 2D) = "grey" {}
 		[NoScaleOffset] _Texture2("Cloud Texture", 2D) = "grey" {}
 		[Enum(360 Degrees, 0, 180 Degrees, 1)] _ImageType("Image Type", Float) = 0
@@ -44,6 +45,7 @@ Shader "Skybox/Panoramic" {
 				half _Exposure2;
 				float _Rotation1;
 				float _Rotation2;
+				float _RotationSpeed;
 
 				float _CloudOpacity;
 
@@ -115,7 +117,7 @@ Shader "Skybox/Panoramic" {
 					tc.x = fmod(tc.x * i.image180ScaleAndCutoff[0], 1);
 					tc = (tc + i.layout3DScaleAndOffset.xy) * i.layout3DScaleAndOffset.zw;
 
-					_Rotation2 += _Time;
+					_Rotation2 += (_Time.y * _RotationSpeed);
 
 					half4 tex1 = tex2D(_Texture1, tc);
 					tc.x = frac(tc.x + (_Rotation2 - _Rotation1) / 360.0);
