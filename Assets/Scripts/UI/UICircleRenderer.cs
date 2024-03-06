@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,7 +24,7 @@ public class UICircleRenderer : Graphic
         public Vector2 moveMagnitude;
         [Header("Rotation")]
         public float startRot;
-        [HideInInspector] public float rotation;
+        [ReadOnly] public float rotation;
         public float rotSpeed;
         [Header("Scale")]
         public float originalRadius = 100;
@@ -31,7 +32,6 @@ public class UICircleRenderer : Graphic
         public float radiusSpeed;
         public float radiusMagnitude;
         public float radiusAdd;
-
         public void Start(Vector2 cAdd, float rotAdd, float radAdd)
         {
             pos = center + cAdd;
@@ -39,16 +39,30 @@ public class UICircleRenderer : Graphic
             radius = originalRadius + radAdd;
         }
 
-        public void Update(Vector2 cAdd, Vector2 msMul, float rotSAdd, float radSMul, float radMMul, float radAdd)
+        public void Update(Vector2 cAdd, Vector2 msMul, float rotAdd, float rotSMul, float radSMul, float radMMul, float radAdd)
         {
-            rotation += Time.deltaTime * rotSpeed * rotSAdd;
+            rotation += Time.deltaTime * rotSpeed * rotSMul;
             if (rotation > 360) rotation = 0;
             if (rotation < 0) rotation = 360;
 
             radius = originalRadius + (Mathf.Sin(Time.time * radiusSpeed * radSMul) * (radiusMagnitude * radMMul) + (radiusAdd + radAdd));
 
-            pos = center + cAdd + new Vector2(Mathf.Sin(Time.time * moveSpeed.x * msMul.x) * moveMagnitude.x,
-                Mathf.Sin(Time.time * moveSpeed.y * msMul.y) * moveMagnitude.y);
+            float sin = Mathf.Sin((rotation + rotAdd) * Mathf.Deg2Rad);
+            float cos = Mathf.Cos((rotation + rotAdd) * Mathf.Deg2Rad);
+
+            Vector2 magX = Vector2.zero;
+            magX.x = cos * moveMagnitude.x;
+            magX.y = sin * moveMagnitude.x;
+            magX *= Mathf.Sin(Time.time * moveSpeed.x * msMul.x);
+
+            sin = Mathf.Sin((rotation + rotAdd + 90) * Mathf.Deg2Rad);
+            cos = Mathf.Cos((rotation + rotAdd + 90) * Mathf.Deg2Rad);
+            Vector2 magY = Vector2.zero;
+            magY.x = cos * moveMagnitude.y;
+            magY.y = sin * moveMagnitude.y;
+            magY *= Mathf.Sin(Time.time * moveSpeed.y * msMul.y);
+
+            pos = center + cAdd + magX + magY;
         }
 
         public override string ToString()
@@ -92,8 +106,9 @@ public class UICircleRenderer : Graphic
     private void Update()
     {
         circles.ForEach(c => {
-            c.Update(centerAdd, moveSpeedMultiplier, rotSpeedMultiplier, radiusSpeedMultiplier, radiusMagnitudeMultiplier, radiusAdd);
-            SetAllDirty(); });
+            c.Update(centerAdd, moveSpeedMultiplier, rotAdd, rotSpeedMultiplier, radiusSpeedMultiplier, radiusMagnitudeMultiplier, radiusAdd);
+            SetAllDirty();
+        });
 
 #if UNITY_EDITOR
         if (!Application.isPlaying)
@@ -108,7 +123,11 @@ public class UICircleRenderer : Graphic
             if (setAllColor)
             {
                 setAllColor = false;
-                circles.ForEach(c => { c.color = color; });
+                circles.ForEach(c => {
+                    c.color = color;
+                    c.Start(centerAdd, rotAdd, radiusAdd);
+                    SetAllDirty();
+                });
             }
         }
 #endif

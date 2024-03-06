@@ -5,19 +5,21 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Components")]
     CharacterController controller;
-    Transform camAnchor;
+    public Transform camAnchor;
     Camera mainCamera;
     Animator animator;
     public Transform[] bones;
+    public bool isPlaying = false;
 
     [Header("Mesh renderers")]
     public SkinnedMeshRenderer[] bodyParts;
 
     [Header("Camera")]
-    [SerializeField] Vector3 followOffset = new Vector3(0, 0, 0);
-    float xRot, yRot;
+    public Vector3 followOffset = new Vector3(0, 0, 0);
+    public float xRot, yRot;
     [SerializeField] float sensitivity = 500;
-    float zoom = 10;
+    public Vector3 camLocalOffset;
+    public float maxZoom = 10;
     Vector3 camForward;
 
     [Header("Movement")]
@@ -99,12 +101,13 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
-        
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
 
         camAnchor = GameObject.Find("Cam Anchor").transform;
         mainCamera = GameObject.Find("Creature Camera").GetComponent<Camera>();
+
+        animator.SetFloat(speedHash, 0);
+        animator.SetFloat(yVelHash, 0);
+        animator.SetBool(groundedHash, true);
     }
 
     void Update()
@@ -112,7 +115,10 @@ public class PlayerController : MonoBehaviour
 #if UNITY_EDITOR
         debugStringUpdate = "";
 #endif
+        
         ProcessCamera();
+
+        if (!isPlaying) return;
 
         #region ground check---------------------------------------------
         isGrounded = Physics.CheckSphere(transform.position + new Vector3(0, .9f, 0), 1, groundMask);
@@ -144,7 +150,7 @@ public class PlayerController : MonoBehaviour
         //if attack
         bool meleeAttack = attackedLeft ? leftShootPercentage < .33f : rightShootPercentage < .33f; //only push if not gun module
         
-        if ((attackedLeft || attackedRight) && canAttack)
+        if ((attackedLeft || attackedRight) && canAttack && isPlaying)
         {
             canAttack = false;
             
@@ -224,6 +230,7 @@ public class PlayerController : MonoBehaviour
         debugStringUpdate += $"\nlast dir: {lastDir}";
 #endif
         controller.Move(move * speed * Time.deltaTime * speedMultiplier);
+        
         animator.SetFloat(speedHash, inputDir.magnitude);
 
         #region apply gravity
@@ -233,6 +240,7 @@ public class PlayerController : MonoBehaviour
         }
 
         velocity.y += (gravity * gravityMultiplier) * Time.deltaTime;
+
         controller.Move(velocity * Time.deltaTime);
 
         animator.SetFloat(yVelHash, UtilsFunctions.Map(-5, 5, -1, 1, velocity.y));
@@ -248,11 +256,14 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         //fix zoom on collision
+        float targetZoom;
+
         if (Physics.Linecast(camAnchor.position, camAnchor.position + camAnchor.forward * 10, out RaycastHit hit, groundMask))
-            zoom = hit.distance-.2f;
+            targetZoom = hit.distance-.2f;
         else
-            zoom = 10;
-        mainCamera.transform.localPosition = new Vector3(0, 0, zoom);
+            targetZoom = maxZoom;
+
+        mainCamera.transform.localPosition = new Vector3(camLocalOffset.x, camLocalOffset.y, targetZoom);
 
         //fix material sorting
         for(int i = 0; i < 4; i++)
@@ -273,17 +284,17 @@ public class PlayerController : MonoBehaviour
                                  transform.forward * followOffset.z;
 
         camAnchor.position = Vector3.Lerp(camAnchor.position, targetPosition, Time.deltaTime * (20 + speed * 2));
-
-        if (Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0)
+        
+        if ((Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0) && isPlaying)
         {
             yRot += Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime;
-            if (yRot < 0) yRot = 360;
-            if (yRot > 360) yRot = 0;
-
             xRot += Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime;
-            xRot = Mathf.Clamp(xRot, -89f, 89f);
-            camAnchor.rotation = Quaternion.Euler(xRot, yRot, 0);
         }
+        if (yRot < 0) yRot = 360;
+        if (yRot > 360) yRot = 0;
+
+        xRot = Mathf.Clamp(xRot, -89f, 89f);
+        camAnchor.rotation = Quaternion.Euler(xRot, yRot, 0);
     }
     void ProcessCombo()
     {

@@ -72,3 +72,7 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 Assets/Extras/Videos/
+
+Assets/Saves/
+
+Assets/Saves.meta

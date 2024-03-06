@@ -126,6 +126,7 @@ Material:
     - _Rotation1: 0
     - _Rotation2: 0
     - _Rotation3: 104
+    - _RotationSpeed: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Tint: {r: 0.5, g: 0.5, b: 0.5, a: 0.5019608}
