@@ -27,16 +27,16 @@ public struct PlayerAttributes
     public int jump; //jump height
     public int currency;
 
-    public float GetMaxHp()
+    public int GetMaxHp()
     {
-        float maxHp = 10;
+        int hptoAdd = 10;
         for (int i = 0; i <= vitality; i++)
         {
             float a = Mathf.Sin(i * 0.149f) * 3.7f + 10;
             float b = Mathf.Sin(i * 0.02f) * 23 + 5;
-            maxHp += a + b - 10;
+            hptoAdd += (int)(a + b) - 10;
         }
-
-        return maxHp;
+        //80 is the starting max hp
+        return hptoAdd + 80;
     }
 }

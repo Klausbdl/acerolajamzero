@@ -24,13 +24,18 @@ public class GameManager : Singleton<GameManager>
     public PlayerController playerController;
     public GameObject roomObject;
     public UIManager uiManager;
-    
+    public Light sunLight;
     Animator canvasAnimator;
-
+    
     [Header("Player Attributes")]
     public PlayerAttributes playerAttributes;
     public List<PlayerSave> saves = new List<PlayerSave>();
     public PlayerSave currentSave;
+
+    [Header("Game")]
+    public bool pause = false;
+    public GameObject[] levels;
+    public Transform[] startPoints;
 
     public override void Awake()
     {
@@ -38,10 +43,26 @@ public class GameManager : Singleton<GameManager>
 
         canvasAnimator = GetComponent<Animator>();
 
+        sunLight.transform.rotation = Quaternion.Euler(170.477f, 0, 0);
+        sunLight.intensity = 3.1f;
         RenderSettings.skybox = nightSkyMaterial;
         DynamicGI.UpdateEnvironment();
 
         EventSystem.current.SetSelectedGameObject(uiManager.startButton.gameObject);
+
+        uiManager.LoadGraphicsAndAudio();
+    }
+
+    public void Update()
+    {
+        if (Input.GetButtonDown("Pause"))
+        {
+            pause = !pause;
+            if (pause)
+                PauseRun();
+            else
+                ResumeRun();
+        }
     }
 
     public void StartGame()
@@ -60,8 +81,10 @@ public class GameManager : Singleton<GameManager>
         yield return new WaitForSeconds(6f);
 
         #region environment stuff
-        Debug.Log("Changing skybox");
+        Debug.Log("Changing skybox to day");
         roomObject.SetActive(false);
+        sunLight.transform.rotation = Quaternion.Euler(95, 0, 0);
+        sunLight.intensity = 1;
         RenderSettings.skybox = daySkyMaterial;
         DynamicGI.UpdateEnvironment();
         #endregion
@@ -86,11 +109,11 @@ public class GameManager : Singleton<GameManager>
             uiManager.lastSlotText.text = "";
 
         }
-        
-        
+
+
         #endregion
 
-        yield return null;
+        Debug.Log("End Start Game Coroutine");
     }
 
     IEnumerator CloseGameRoutine()
@@ -98,13 +121,15 @@ public class GameManager : Singleton<GameManager>
         Debug.Log("Begin Close Game Coroutine");
 
         #region environment stuff
-        Debug.Log("Changing skybox");
+        Debug.Log("Changing skybox to night");
         roomObject.SetActive(false);
+        sunLight.transform.rotation = Quaternion.Euler(170.477f, 0, 0);
+        sunLight.intensity = 3.1f;
         RenderSettings.skybox = nightSkyMaterial;
         DynamicGI.UpdateEnvironment();
         #endregion
 
-        //yield return new WaitForSeconds(6f);
+        Debug.Log("End Close Game Coroutine");
         yield return null;
     }
     //--------------------------------------------------------------------------
@@ -148,6 +173,11 @@ public class GameManager : Singleton<GameManager>
         else
             Debug.Log("Player already spawned");
         #endregion
+
+        uiManager.LoadPlayerSettings();
+
+        Debug.Log("Loading Player Attributes");
+        uiManager.currencyText.text = currentSave.attributes.currency.ToString();
     }
 
     public void OnLoadButton()
@@ -222,4 +252,67 @@ public class GameManager : Singleton<GameManager>
         }
     }
     #endregion
+
+    public void QuitApplication()
+    {
+        Application.Quit();
+    }
+    //--------------------------------------------------------------------------
+    public void StartRun()
+    {
+        StartCoroutine(StartRunRoutine());
+    }
+    IEnumerator StartRunRoutine()
+    {
+        Debug.Log("Begin Start Run Coroutine");
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        Debug.Log("Loading level 0");
+        levels[0].SetActive(true);
+        yield return new WaitForEndOfFrame();
+        levels[0].GetComponentInChildren<ReflectionProbe>().RenderProbe();
+
+        yield return new WaitForSeconds(3);
+        Debug.Log("Setting up player");
+        
+        playerController.controller.enabled = false;
+        uiManager.UpdateHpCircles(currentSave.attributes.GetMaxHp());
+        
+        yield return new WaitForEndOfFrame();
+        
+        playerController.transform.position = startPoints[0].position;
+        playerController.camAnchor.position = playerController.transform.position;
+        playerController.maxZoom = 10;
+        playerController.followOffset = new Vector3(0, 3, 0);
+        playerController.camLocalOffset = new Vector3(0, 0, 0);
+        
+        yield return new WaitForEndOfFrame();
+        
+        playerController.controller.enabled = true;
+        playerController.isPlaying = true;
+
+        Debug.Log("End Start Run Coroutine");
+    }
+
+    public void PauseRun()
+    {
+        Debug.Log("pause");
+        gameCanvasAnimator.SetTrigger("Pause Run");
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        playerController.isPlaying = false;
+        Time.timeScale = 0;
+    }
+
+    public void ResumeRun()
+    {
+        Debug.Log("resume");
+        gameCanvasAnimator.SetTrigger("Pause Run");
+        pause = false;
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+        playerController.isPlaying = true;
+        Time.timeScale = 1;
+    }
 }

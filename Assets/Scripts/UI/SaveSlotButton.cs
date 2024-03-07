@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class SaveSlotButton : MonoBehaviour
@@ -20,5 +21,10 @@ public class SaveSlotButton : MonoBehaviour
     public void LoadGame()
     {
         GameManager.Instance.OnPlayGameButton(id);
+    }
+
+    public void OnSelect(BaseEventData eventData)
+    {
+        GameManager.Instance.uiManager.CenterToItem(GetComponent<RectTransform>());
     }
 }

@@ -45,20 +45,20 @@ MonoBehaviour:
   m_AdditionalLightsShadowResolutionTierHigh: 512
   m_ReflectionProbeBlending: 1
   m_ReflectionProbeBoxProjection: 1
-  m_ShadowDistance: 150
-  m_ShadowCascadeCount: 2
+  m_ShadowDistance: 50
+  m_ShadowCascadeCount: 1
   m_Cascade2Split: 0.2711758
   m_Cascade3Split: {x: 0.1, y: 0.3}
-  m_Cascade4Split: {x: 0.18513186, y: 0.3730768, z: 0.544}
-  m_CascadeBorder: 0.19799998
-  m_ShadowDepthBias: 0.82
+  m_Cascade4Split: {x: 0.2302483, y: 0.46275395, z: 0.7020316}
+  m_CascadeBorder: 0.18947397
+  m_ShadowDepthBias: 0
   m_ShadowNormalBias: 0
   m_AnyShadowsSupported: 1
-  m_SoftShadowsSupported: 0
+  m_SoftShadowsSupported: 1
   m_ConservativeEnclosingSphere: 0
   m_NumIterationsEnclosingSphere: 64
   m_SoftShadowQuality: 1
-  m_AdditionalLightsCookieResolution: 4096
+  m_AdditionalLightsCookieResolution: 256
   m_AdditionalLightsCookieFormat: 4
   m_UseSRPBatcher: 1
   m_SupportsDynamicBatching: 0
@@ -71,7 +71,7 @@ MonoBehaviour:
   m_UseAdaptivePerformance: 1
   m_ColorGradingMode: 0
   m_ColorGradingLutSize: 32
-  m_UseFastSRGBLinearConversion: 0
+  m_UseFastSRGBLinearConversion: 1
   m_SupportDataDrivenLensFlare: 1
   m_ShadowType: 1
   m_LocalShadowsSupported: 0

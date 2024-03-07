@@ -61,7 +61,7 @@ public static class UtilsFunctions
         return new Vector3(vector.x * other.x, vector.y * other.y, vector.z * other.z);
     }
 
-    static public void DrawGizmoString(string text, Vector3 worldPosition, Color textColor, Vector2 anchor, float textSize = 15f)
+    public static void DrawGizmoString(string text, Vector3 worldPosition, Color textColor, Vector2 anchor, float textSize = 15f)
     {
 #if UNITY_EDITOR
         var view = UnityEditor.SceneView.currentDrawingSceneView;
@@ -85,5 +85,21 @@ public static class UtilsFunctions
         GUI.Label(new Rect(alignedPosition / pixelRatio, size / pixelRatio), text, style);
         UnityEditor.Handles.EndGUI();
 #endif
+    }
+    
+    /// <summary>
+    /// Convert linear to decibel volume
+    /// </summary>
+    /// <param name="input">Value from 0 to 1</param>
+    /// <returns></returns>
+    public static float LinearToDecibel(float input)
+    {
+        float dB;
+        if (input != 0)
+            dB = 20f * Mathf.Log10(input);
+        else
+            dB = -144f;
+        
+        return dB;
     }
 }

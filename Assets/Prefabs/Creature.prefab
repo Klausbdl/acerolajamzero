@@ -421,11 +421,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3472e29189d629b42b361c95f9d57cd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  camAnchor: {fileID: 0}
+  mainCamera: {fileID: 0}
   bones:
   - {fileID: 1913172141844551110}
   - {fileID: 3401073181886379443}
   - {fileID: 5816836013893364345}
   - {fileID: 1479914627090884644}
+  isPlaying: 0
   bodyParts:
   - {fileID: 4934899168183000209}
   - {fileID: 5726327035070573143}
@@ -433,7 +436,12 @@ MonoBehaviour:
   - {fileID: 1402200423976573405}
   - {fileID: 8652273226668935157}
   followOffset: {x: 0, y: 3, z: 0}
-  sensitivity: 500
+  xRot: 0
+  yRot: 0
+  sensitivityX: 5
+  sensitivityY: 5
+  camLocalOffset: {x: 0, y: 0, z: 0}
+  maxZoom: 10
   groundMask:
     serializedVersion: 2
     m_Bits: 64

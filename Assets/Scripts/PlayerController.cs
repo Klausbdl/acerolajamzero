@@ -1,13 +1,12 @@
-using System.Collections;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
     [Header("Components")]
-    CharacterController controller;
+    [HideInInspector] public CharacterController controller;
     public Transform camAnchor;
-    Camera mainCamera;
-    Animator animator;
+    public Camera mainCamera;
+    [HideInInspector] public Animator animator;
     public Transform[] bones;
     public bool isPlaying = false;
 
@@ -17,7 +16,8 @@ public class PlayerController : MonoBehaviour
     [Header("Camera")]
     public Vector3 followOffset = new Vector3(0, 0, 0);
     public float xRot, yRot;
-    [SerializeField] float sensitivity = 500;
+    public float sensitivityX = 5;
+    public float sensitivityY = 5;
     public Vector3 camLocalOffset;
     public float maxZoom = 10;
     Vector3 camForward;
@@ -60,8 +60,8 @@ public class PlayerController : MonoBehaviour
     public GameObject bulletPrefab;
 
     [Header("Attributes")]
-    public float maxHp;
-    public float curHp;
+    public int maxHp;
+    public int curHp;
     public float speed;
     public float damage;
     public float attackSpeed = 1;
@@ -287,8 +287,8 @@ public class PlayerController : MonoBehaviour
         
         if ((Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0) && isPlaying)
         {
-            yRot += Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime;
-            xRot += Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime;
+            yRot += Input.GetAxis("Mouse X") * sensitivityX;
+            xRot += Input.GetAxis("Mouse Y") * sensitivityY;
         }
         if (yRot < 0) yRot = 360;
         if (yRot > 360) yRot = 0;
