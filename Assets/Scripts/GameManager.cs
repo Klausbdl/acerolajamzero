@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using System.IO;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Burst.Intrinsics;
+using Unity.VisualScripting;
 
 
 public class GameManager : Singleton<GameManager>
@@ -18,14 +20,13 @@ public class GameManager : Singleton<GameManager>
     public Material nightSkyMaterial;
 
     [Header("Components")]
-    public Animator gameCanvasAnimator;
+    Animator canvasAnimator;
     public WeaponsData weaponData;
     public LegsData legsData;
     public PlayerController playerController;
     public GameObject roomObject;
     public UIManager uiManager;
     public Light sunLight;
-    Animator canvasAnimator;
     
     [Header("Player Attributes")]
     public PlayerAttributes playerAttributes;
@@ -36,25 +37,42 @@ public class GameManager : Singleton<GameManager>
     public bool pause = false;
     public GameObject[] levels;
     public Transform[] startPoints;
+    public bool inRun;
+    private float runTime = 0f;
 
-    public override void Awake()
+    //debug
+    public string debugString = "";
+    string debugUpdateString = "";
+
+    private void Start()
     {
-        base.Awake();
-
+        Time.timeScale = 1;
         canvasAnimator = GetComponent<Animator>();
+        canvasAnimator.SetTrigger("Start App");
+        debugString += canvasAnimator.name;
 
-        sunLight.transform.rotation = Quaternion.Euler(170.477f, 0, 0);
-        sunLight.intensity = 3.1f;
-        RenderSettings.skybox = nightSkyMaterial;
-        DynamicGI.UpdateEnvironment();
+        ChangeSky("night");
 
         EventSystem.current.SetSelectedGameObject(uiManager.startButton.gameObject);
 
         uiManager.LoadGraphicsAndAudio();
+
+        foreach(var level in levels)
+        {
+            level.SetActive(false);
+        }
     }
 
     public void Update()
     {
+        debugUpdateString = "\nUpdate:\n";
+        debugUpdateString += $"time:{Time.time}\nunscaled time:{Time.unscaledTime}";
+        debugUpdateString += $"\npause:{pause} | in run:{inRun}";
+        if(canvasAnimator.GetCurrentAnimatorClipInfo(0).Length > 0)
+            debugUpdateString += $"\nanimator: {canvasAnimator.GetCurrentAnimatorClipInfo(0)[0].clip.name}";
+        debugUpdateString += $"\nSun - rot:{sunLight.transform.rotation.eulerAngles} intensity:{sunLight.intensity}";
+
+
         if (Input.GetButtonDown("Pause"))
         {
             pause = !pause;
@@ -63,40 +81,34 @@ public class GameManager : Singleton<GameManager>
             else
                 ResumeRun();
         }
-    }
 
-    public void StartGame()
+        if (inRun && !pause)
+        {
+            runTime += Time.deltaTime;
+
+            float minutes = Mathf.FloorToInt(runTime / 60);
+            float seconds = Mathf.FloorToInt(runTime % 60);
+            float milliseconds = (runTime * 1000) % 1000;
+
+            uiManager.timerText.text = string.Format("{0:00}'{1:00}''<size=60%>{2:000}", minutes, seconds, milliseconds);
+        }
+    }
+    //-------------------------------------------------------------------------- before opening game
+    public void OpenGame()
     {
-        StartCoroutine(StartGameRoutine());
+        StartCoroutine(OpenGameRoutine());
     }
-
-    public void CloseGame()
-    {
-        StartCoroutine(CloseGameRoutine());
-    }
-
-    IEnumerator StartGameRoutine()
+    IEnumerator OpenGameRoutine()
     {
         Debug.Log("Begin Start Game Coroutine");
-        yield return new WaitForSeconds(6f);
 
-        #region environment stuff
-        Debug.Log("Changing skybox to day");
-        roomObject.SetActive(false);
-        sunLight.transform.rotation = Quaternion.Euler(95, 0, 0);
-        sunLight.intensity = 1;
-        RenderSettings.skybox = daySkyMaterial;
-        DynamicGI.UpdateEnvironment();
-        #endregion
-
-        yield return new WaitForEndOfFrame();
+        yield return new WaitForSeconds(4);
 
         #region ui stuff
         Debug.Log("Loading Saves");
         EventSystem.current.SetSelectedGameObject(uiManager.newGameButton.gameObject);
-        
         LoadSaves();
-
+        
         if (PlayerPrefs.HasKey("Last Slot"))
         {
             uiManager.lastSlotText.text = $"Save Slot {PlayerPrefs.GetInt("Last Slot")}";
@@ -107,32 +119,24 @@ public class GameManager : Singleton<GameManager>
         else
         {
             uiManager.lastSlotText.text = "";
-
         }
-
-
         #endregion
 
         Debug.Log("End Start Game Coroutine");
     }
 
+    public void CloseGame()
+    {
+        StartCoroutine(CloseGameRoutine());
+    }
     IEnumerator CloseGameRoutine()
     {
         Debug.Log("Begin Close Game Coroutine");
 
-        #region environment stuff
-        Debug.Log("Changing skybox to night");
-        roomObject.SetActive(false);
-        sunLight.transform.rotation = Quaternion.Euler(170.477f, 0, 0);
-        sunLight.intensity = 3.1f;
-        RenderSettings.skybox = nightSkyMaterial;
-        DynamicGI.UpdateEnvironment();
-        #endregion
-
         Debug.Log("End Close Game Coroutine");
         yield return null;
     }
-    //--------------------------------------------------------------------------
+    //-------------------------------------------------------------------------- inside game
     public void OnPlayGameButton(int slot)
     {
         if(slot == -1)
@@ -156,8 +160,6 @@ public class GameManager : Singleton<GameManager>
             currentSave = saves[slot];
         }
 
-        gameCanvasAnimator.SetTrigger("Start Game");
-
         #region spawn player
         if(playerController == null)
         {
@@ -178,6 +180,8 @@ public class GameManager : Singleton<GameManager>
 
         Debug.Log("Loading Player Attributes");
         uiManager.currencyText.text = currentSave.attributes.currency.ToString();
+
+        canvasAnimator.SetTrigger("Start Game");
     }
 
     public void OnLoadButton()
@@ -197,7 +201,6 @@ public class GameManager : Singleton<GameManager>
 
         File.WriteAllText(filePath, saveData);
     }
-
     public void LoadSaves()
     {
         //clear saves
@@ -242,6 +245,13 @@ public class GameManager : Singleton<GameManager>
                     eventTrigger.triggers.Add(entry);
                 }
             }
+
+            if(PlayerPrefs.GetInt("Last Slot") > saves.Count - 1)
+            {
+                uiManager.continueButton.interactable = false;
+                PlayerPrefs.DeleteKey("Last Slot");
+            }
+
         }
         else
         {
@@ -257,7 +267,7 @@ public class GameManager : Singleton<GameManager>
     {
         Application.Quit();
     }
-    //--------------------------------------------------------------------------
+    //-------------------------------------------------------------------------- inside run
     public void StartRun()
     {
         StartCoroutine(StartRunRoutine());
@@ -277,7 +287,6 @@ public class GameManager : Singleton<GameManager>
         Debug.Log("Setting up player");
         
         playerController.controller.enabled = false;
-        uiManager.UpdateHpCircles(currentSave.attributes.GetMaxHp());
         
         yield return new WaitForEndOfFrame();
         
@@ -292,13 +301,26 @@ public class GameManager : Singleton<GameManager>
         playerController.controller.enabled = true;
         playerController.isPlaying = true;
 
+        inRun = true;
+        runTime = 0;
+        
+        int hp = 0;
+        int maxHp = currentSave.attributes.GetMaxHp();
+        int ammountToAdd = (int)(0.004f * maxHp + 1.2f);
+        while (hp <= maxHp)
+        {
+            hp += ammountToAdd;
+            hp = Mathf.Clamp(hp, 0, maxHp);
+            uiManager.UpdateHpCircles(hp);
+            yield return new WaitForEndOfFrame();
+        }
+
         Debug.Log("End Start Run Coroutine");
     }
-
     public void PauseRun()
     {
         Debug.Log("pause");
-        gameCanvasAnimator.SetTrigger("Pause Run");
+        canvasAnimator.SetTrigger("Pause Run");
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
         playerController.isPlaying = false;
@@ -308,11 +330,52 @@ public class GameManager : Singleton<GameManager>
     public void ResumeRun()
     {
         Debug.Log("resume");
-        gameCanvasAnimator.SetTrigger("Pause Run");
+        canvasAnimator.SetTrigger("Pause Run");
         pause = false;
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
         playerController.isPlaying = true;
         Time.timeScale = 1;
+    }
+    //-------------------------------------------------------------------------- animation triggers
+    public void ChangeSky(string sky)
+    {
+        debugString += $"\n{sky}";
+        switch (sky)
+        {
+            case "day":
+                Debug.Log("Changing skybox to DAY");
+                roomObject.SetActive(false);
+                sunLight.transform.rotation = Quaternion.Euler(95, 0, 0);
+                sunLight.intensity = 1;
+                RenderSettings.skybox = daySkyMaterial;
+                break;
+            case "night":
+                Debug.Log("Changing skybox to NIGHT");
+                roomObject.SetActive(true);
+                sunLight.transform.rotation = Quaternion.Euler(170.477f, 0, 0);
+                sunLight.intensity = 3.1f;
+                RenderSettings.skybox = nightSkyMaterial;
+                break;
+        }
+
+        DynamicGI.UpdateEnvironment();
+        //ReflectionProbe[] probes = FindObjectsByType<ReflectionProbe>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        //foreach (var p in probes)
+        //    p.RenderProbe();
+    }
+
+
+
+    private void OnGUI()
+    {
+        Rect labelRect = new Rect(50, 50, 600, 1000);
+        GUI.color = Color.red;
+        GUI.skin.label.fontSize = 18;
+        string debugtext = "";
+        debugtext += $"\nDebug string:\n{debugString}";
+        debugtext += $"\nDebug Update string:\n{debugUpdateString}";
+
+        GUI.Label(labelRect, debugtext);
     }
 }

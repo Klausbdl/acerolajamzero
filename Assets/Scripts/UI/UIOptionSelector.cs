@@ -94,7 +94,6 @@ public class UIOptionSelector : MonoBehaviour
     {
         if (Options.Count == 0) return;
         if (listElements.Count == 0) return;
-        Debug.Log("Update List");
 
         Color originalColor = new Color(listElements[0].color.r, listElements[0].color.g, listElements[0].color.b, 1);
         Color fadedColor = new Color(originalColor.r, originalColor.g, originalColor.b, .1f);

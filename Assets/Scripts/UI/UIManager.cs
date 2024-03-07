@@ -6,6 +6,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UnityEngine.Rendering.LookDev;
 
 public class UIManager : MonoBehaviour
 {
@@ -46,11 +48,17 @@ public class UIManager : MonoBehaviour
     [Header("HUD")]
     public UICircleRenderer hpCirclesRenderer;
     public TextMeshProUGUI currencyText;
+    public TextMeshProUGUI timerText;
 
     private void Start()
     {
         string monthName = DateTime.Now.ToString("MMM", CultureInfo.InvariantCulture);
-        dateTimeText.text = $"{DateTime.Now.Hour}:{DateTime.Now.Minute}\n{DateTime.Now.Day.ToString("00")}/{monthName}/{DateTime.Now.Year}";
+        dateTimeText.text = $"{DateTime.Now.Hour.ToString("00")}:{DateTime.Now.Minute.ToString("00")}\n{DateTime.Now.Day.ToString("00")}/{monthName}/{DateTime.Now.Year}";
+    }
+
+    public void Selected(int id)
+    {
+        EventSystem.current.SetSelectedGameObject(buttons[id].gameObject);
     }
 
     public void LoadGraphicsAndAudio()
@@ -78,6 +86,8 @@ public class UIManager : MonoBehaviour
         //initial load
         resolutions = Screen.resolutions.ToList();
         resolutions = resolutions.GroupBy(resolution => new { resolution.width, resolution.height }).Select(group => group.First()).ToList();
+        float userRatio = (float)resolutions[^1].width / resolutions[^1].height;
+        resolutions = resolutions.Where(resolution => Mathf.Approximately((float)resolution.width/resolution.height, userRatio)).Distinct().ToList();
         if (resolutionSelector.Options.Count == 0)
         {
             List<string> list = new List<string>();
@@ -152,6 +162,7 @@ public class UIManager : MonoBehaviour
         #endregion
 
         PlayerPrefs.Save();
+        GameManager.Instance.debugString += $"\nLoaded graphics and Audio";
     }
 
     public void LoadPlayerSettings()

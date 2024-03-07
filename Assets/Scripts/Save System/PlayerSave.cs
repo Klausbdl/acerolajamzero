@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 
+[Serializable]
 public class PlayerSave
 {
     public string message = "If you managed to deserialize this (which might be easy lol), consider not cheating for the sake of reaching the end. You dont need all 600 levels to get the true ending ;)";

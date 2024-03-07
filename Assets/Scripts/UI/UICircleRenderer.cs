@@ -17,6 +17,7 @@ public class UICircleRenderer : Graphic
     [Header("Global Settings")]
     public int sidesAdd = 0;
     public float offsetAdd;
+    public float noiseMultiplier = 1;
     public float noiseSpeed = 1;
     [Header("Position")]
     public Vector2 centerAdd;
@@ -122,8 +123,8 @@ public class UICircleRenderer : Graphic
             float angle = Mathf.Deg2Rad * (i * (360f / sides)) - rotAngle;
             vertex.position.x += Mathf.Sin(angle) * c.radius;
             vertex.position.y += Mathf.Cos(angle) * c.radius;
-            vertex.position.x += (Mathf.PerlinNoise1D((c.timeOffset + Time.unscaledTime + i*100) * noiseSpeed * c.noiseSpeed) - .5f) * c.noise;
-            vertex.position.y += (Mathf.PerlinNoise1D((c.timeOffset + Time.unscaledTime + i*200) * noiseSpeed * c.noiseSpeed) - .5f) * c.noise;
+            vertex.position.x += (Mathf.PerlinNoise1D((c.timeOffset + Time.unscaledTime + i*100) * noiseSpeed * c.noiseSpeed) - .5f) * c.noise * noiseMultiplier;
+            vertex.position.y += (Mathf.PerlinNoise1D((c.timeOffset + Time.unscaledTime + i*200) * noiseSpeed * c.noiseSpeed) - .5f) * c.noise * noiseMultiplier;
             vh.AddVert(vertex);
         }
     }
