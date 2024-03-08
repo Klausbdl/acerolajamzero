@@ -1,8 +1,10 @@
-using System.Net;
 using UnityEngine;
 
+[ExecuteInEditMode]
 public class LegsData : MonoBehaviour
 {
+    public GameManager manager;
+    public bool update;
     [Header("Data")]
     public Transform normal;
     public Transform wheel;
@@ -17,6 +19,33 @@ public class LegsData : MonoBehaviour
     public float fontSize = 15;
     public float dataFontSize = 15;
     public Color[] colors = new Color[12];
+#if UNITY_EDITOR
+    private void Update()
+    {
+        if (update)
+        {
+            update = false;
+            manager.shopInventory.legModules.Clear();
+
+            Transform[] transforms = transform.GetComponentsInChildren<Transform>();
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform t = transforms[i];
+                if (t == transform) continue;
+
+                float spd = t.localPosition.z / valuesRange;
+                float jump = t.localPosition.x / valuesRange;
+
+                LegModule module = new LegModule();
+                module.name = t.name[0].ToString().ToUpper() + t.name.Substring(1);
+                module.moduleType = (LegModule.LegModuleType)i-1;
+                module.speed = spd;
+                module.jump = jump;
+
+                manager.shopInventory.legModules.Add(module);
+            }
+        }
+    }
 
     private void OnDrawGizmos()
     {
@@ -47,4 +76,5 @@ public class LegsData : MonoBehaviour
             UtilsFunctions.DrawGizmoString(text, tPos, Color.white, Vector2.one, dataFontSize);
         }
     }
+#endif
 }

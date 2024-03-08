@@ -8,6 +8,7 @@ using UnityEngine.Audio;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.LookDev;
+using System.Collections;
 
 public class UIManager : MonoBehaviour
 {
@@ -45,6 +46,25 @@ public class UIManager : MonoBehaviour
     public Slider musicAudioSlider;
     public Slider fxAudioSlider;
     #endregion
+    [Header("Inventory Menu")]
+    //stats
+    public UIStatsRenderer statsRenderer;
+    public TextMeshProUGUI vitText;
+    public TextMeshProUGUI defText;
+    public TextMeshProUGUI agiText;
+    public TextMeshProUGUI strText;
+    public TextMeshProUGUI dexText;
+    public TextMeshProUGUI jmpText;
+    //inventory
+    public GameObject moduleToggle;
+    public GameObject leftArmContent;
+    public TextMeshProUGUI leftArmSlotCounterText;
+    public GameObject rightArmContent;
+    public TextMeshProUGUI rightArmSlotCounterText;
+    public GameObject legsContent;
+    public List<Toggle> leftArmToggles = new List<Toggle>();
+    public List<Toggle> rightArmToggles = new List<Toggle>();
+    public List<Toggle> legsToggles = new List<Toggle>();
     [Header("HUD")]
     public UICircleRenderer hpCirclesRenderer;
     public TextMeshProUGUI currencyText;
@@ -308,6 +328,84 @@ public class UIManager : MonoBehaviour
         savesScrollRect.verticalNormalizedPosition = normPosBottomTop;
     }
 
+    public void UpdateStats(PlayerAttributes attributes)
+    {
+        vitText.text = "Vit " + attributes.vitality;
+        defText.text = "Def " + attributes.defense;
+        agiText.text = "Agi " + attributes.agility;
+        strText.text = "Str " + attributes.strength;
+        dexText.text = "Dex " + attributes.dexterity;
+        jmpText.text = "Jmp " + attributes.jump;
+        
+        statsRenderer.statsValues[5] = attributes.vitality / 100f;
+        statsRenderer.statsValues[0] = attributes.defense / 100f;
+        statsRenderer.statsValues[1] = attributes.agility / 100f;
+        statsRenderer.statsValues[2] = attributes.strength / 100f;
+        statsRenderer.statsValues[3] = attributes.dexterity / 100f;
+        statsRenderer.statsValues[4] = attributes.jump / 100f;
+        statsRenderer.SetAllDirty();
+
+        currencyText.text = attributes.currency.ToString();
+    }
+    public void UpdateInventory(PlayerSave save)
+    {
+        Inventory inv = save.playerInventory;
+
+        legsToggles.ForEach(t => { Destroy(t.gameObject); });
+        legsToggles.Clear();
+
+        leftArmToggles.ForEach(t => { Destroy(t.gameObject); });
+        leftArmToggles.Clear();
+        
+        rightArmToggles.ForEach(t => { Destroy(t.gameObject); });
+        rightArmToggles.Clear();
+
+        foreach (var leg in inv.legModules)
+        {
+            Toggle legToggle = Instantiate(moduleToggle, legsContent.transform).GetComponent<Toggle>();
+            legToggle.group = legsContent.GetComponent<ToggleGroup>();
+            legToggle.GetComponentInChildren<TextMeshProUGUI>().text = leg.name;
+            legToggle.onValueChanged.AddListener(on =>
+            {
+                if (on) EquipLegModule(leg);
+            });
+            if (leg.name == save.equippedLegModule.name)
+                legToggle.isOn = true;
+        }
+
+        foreach (var arm in inv.leftArmModules)
+        {
+            Toggle armToggle = Instantiate(moduleToggle, leftArmContent.transform).GetComponent<Toggle>();
+            armToggle.GetComponentInChildren<TextMeshProUGUI>().text = arm.name;
+            armToggle.onValueChanged.AddListener(on =>
+            {
+                EquipArmModule(arm, 0, on, armToggle);
+            });
+            if (save.equippedLeftArmModules.Any(mod => mod.name == arm.name))
+                armToggle.isOn = true;
+            
+            leftArmToggles.Add(armToggle);
+        }
+
+        foreach (var arm in inv.rightArmModules)
+        {
+            Toggle armToggle = Instantiate(moduleToggle, rightArmContent.transform).GetComponent<Toggle>();
+            armToggle.GetComponentInChildren<TextMeshProUGUI>().text = arm.name;
+            armToggle.onValueChanged.AddListener(on =>
+            {
+                EquipArmModule(arm, 1, on, armToggle);
+            });
+            if (save.equippedRightArmModules.Any(mod => mod.name == arm.name))
+                armToggle.isOn = true;
+
+            rightArmToggles.Add(armToggle);
+        }
+
+        leftArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(0)}";
+        rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(1)}";
+        
+        //TODO: desabilitar toggles se tiver com todos os slots cheios
+    }
     public void UpdateHpCircles(int currHp)
     {
         //each circle = 100 hp
@@ -341,5 +439,145 @@ public class UIManager : MonoBehaviour
         }
         
         hpCirclesRenderer.SetAllDirty();
+    }
+
+    public void EquipLegModule(LegModule module)
+    {
+        //update save
+        GameManager.Instance.currentSave.equippedLegModule = module;
+
+        List<SkinnedMeshRenderer> renderers = new List<SkinnedMeshRenderer>
+        {
+            GameManager.Instance.playerController.bodyParts[2],
+            GameManager.Instance.playerController.bodyParts[3]
+        };
+        int blendShapeIndex = (int)module.moduleType - 1;
+        StartCoroutine(DeformLeg(renderers, blendShapeIndex));      
+    }
+    IEnumerator DeformLeg(List<SkinnedMeshRenderer> renderers, int blendShapeIndex)
+    {
+        float duration = .15f;
+        float timer = 0;
+
+        while(timer <= duration)
+        {
+            timer += Time.unscaledDeltaTime;
+
+            foreach (var r in renderers)
+            {
+                if(blendShapeIndex == -1)
+                    for(int i = 0 ; i < 5; i++)
+                    {
+                        if (r.GetBlendShapeWeight(i) > 0)
+                            r.SetBlendShapeWeight(i, Mathf.Lerp(100, 0, timer / duration));
+                    }                        
+                else
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        if(i == blendShapeIndex)
+                            r.SetBlendShapeWeight(i, Mathf.Lerp(0, 100, timer / duration));
+                        else
+                        {
+                            if (r.GetBlendShapeWeight(i) > 0)
+                                r.SetBlendShapeWeight(i, Mathf.Lerp(100, 0, timer / duration));
+                        }
+                    }
+                }
+            }
+            yield return new WaitForEndOfFrame();
+        }
+        yield return null;
+    }
+
+    public void EquipArmModule(ArmModule module, int side, bool on, Toggle toggle)
+    {
+        if (on)
+        {
+            if(side == 0)
+            {
+                if (GameManager.Instance.currentSave.equippedLeftArmModules.Any(m => m.name != module.name))
+                    GameManager.Instance.currentSave.equippedLeftArmModules.Add(module);
+
+                leftArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
+            }
+            else
+            {
+                if (GameManager.Instance.currentSave.equippedRightArmModules.Any(m => m.name != module.name))
+                    GameManager.Instance.currentSave.equippedRightArmModules.Add(module);
+
+                rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
+            }
+            //if there are no more slots
+            if (GameManager.Instance.currentSave.GetAvailableSlots(side) <= 0)
+            {
+                if (side == 0)
+                {
+                    if (GameManager.Instance.currentSave.playerInventory.slots[side] > 1)
+                        leftArmToggles.ForEach(t => {
+                            if (!t.isOn) t.interactable = false;
+                        });
+                    else
+                    {
+                        leftArmToggles.ForEach(t => {
+                            if (t != toggle)
+                                t.isOn = false;
+                        });
+                    }                        
+                }
+                else
+                {
+                    if (GameManager.Instance.currentSave.playerInventory.slots[side] > 1)
+                        rightArmToggles.ForEach(t => {
+                            if (!t.isOn) t.interactable = false;
+                        });
+                    else
+                        rightArmToggles.ForEach(t => {
+                            if (t != toggle)
+                                t.isOn = false;
+                        });
+                }
+            }
+        }
+        else
+        {
+            if(side == 0) //left side
+            {
+                //checar se é o unico
+                if (GameManager.Instance.currentSave.equippedLeftArmModules.Count == 1)
+                {
+                    toggle.SetIsOnWithoutNotify(true);
+                }
+                else
+                {
+                    ArmModule mToRemove = GameManager.Instance.currentSave.equippedLeftArmModules.FirstOrDefault(m => m.name == module.name);
+                    GameManager.Instance.currentSave.equippedLeftArmModules.Remove(mToRemove);
+                    
+                    leftArmToggles.ForEach(t => {
+                        if (!t.isOn) t.interactable = true;
+                    });
+                }
+                leftArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
+            }
+            else //right side
+            {
+                //checar se é o unico
+                if (GameManager.Instance.currentSave.equippedRightArmModules.Count == 1)
+                {
+                    toggle.SetIsOnWithoutNotify(true);
+                }
+                else
+                {
+                    ArmModule mToRemove = GameManager.Instance.currentSave.equippedRightArmModules.FirstOrDefault(m => m.name == module.name);
+                    GameManager.Instance.currentSave.equippedRightArmModules.Remove(mToRemove);
+
+                    rightArmToggles.ForEach(t => {
+                        if (!t.isOn) t.interactable = true;
+                    });
+                }
+                rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
+            }
+        }
+        
     }
 }

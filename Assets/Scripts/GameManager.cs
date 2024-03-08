@@ -39,6 +39,7 @@ public class GameManager : Singleton<GameManager>
     public Transform[] startPoints;
     public bool inRun;
     private float runTime = 0f;
+    public Inventory shopInventory;
 
     //debug
     public string debugString = "";
@@ -65,7 +66,7 @@ public class GameManager : Singleton<GameManager>
 
     public void Update()
     {
-        debugUpdateString = "\nUpdate:\n";
+        debugUpdateString = "";
         debugUpdateString += $"time:{Time.time}\nunscaled time:{Time.unscaledTime}";
         debugUpdateString += $"\npause:{pause} | in run:{inRun}";
         if(canvasAnimator.GetCurrentAnimatorClipInfo(0).Length > 0)
@@ -149,6 +150,17 @@ public class GameManager : Singleton<GameManager>
             PlayerSave newsave = new PlayerSave();
             newsave.saveId = newSlot;
             currentSave = newsave;
+
+            //add first items to first save
+            //arms
+            currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[4]);
+            currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[4]);
+            currentSave.equippedLeftArmModules.Add(shopInventory.leftArmModules[4]);
+            currentSave.equippedRightArmModules.Add(shopInventory.rightArmModules[4]);
+            //legs
+            currentSave.playerInventory.legModules.Add(shopInventory.legModules[0]);
+            currentSave.equippedLegModule = currentSave.playerInventory.legModules[0];
+
             saves.Add(currentSave);
             SaveToJson(currentSave, newSlot);
         }
@@ -160,8 +172,19 @@ public class GameManager : Singleton<GameManager>
             currentSave = saves[slot];
         }
 
+        //DEBUG
+        currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[3]);
+        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[5]);
+        currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[1]);
+        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[11]);
+        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[1]);
+        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[2]);
+        currentSave.playerInventory.legModules.Add(shopInventory.legModules[1]);
+        currentSave.playerInventory.legModules.Add(shopInventory.legModules[2]);
+        currentSave.playerInventory.legModules.Add(shopInventory.legModules[3]);
+
         #region spawn player
-        if(playerController == null)
+        if (playerController == null)
         {
             Debug.Log("Spawning player");
             foreach (var item in playerPrefabs)
@@ -179,7 +202,8 @@ public class GameManager : Singleton<GameManager>
         uiManager.LoadPlayerSettings();
 
         Debug.Log("Loading Player Attributes");
-        uiManager.currencyText.text = currentSave.attributes.currency.ToString();
+        uiManager.UpdateStats(currentSave.attributes);
+        uiManager.UpdateInventory(currentSave);
 
         canvasAnimator.SetTrigger("Start Game");
     }
@@ -303,7 +327,9 @@ public class GameManager : Singleton<GameManager>
 
         inRun = true;
         runTime = 0;
-        
+
+        yield return new WaitForSeconds(1);
+
         int hp = 0;
         int maxHp = currentSave.attributes.GetMaxHp();
         int ammountToAdd = (int)(0.004f * maxHp + 1.2f);
@@ -366,7 +392,7 @@ public class GameManager : Singleton<GameManager>
     }
 
 
-
+#if UNITY_EDITOR
     private void OnGUI()
     {
         Rect labelRect = new Rect(50, 50, 600, 1000);
@@ -374,8 +400,9 @@ public class GameManager : Singleton<GameManager>
         GUI.skin.label.fontSize = 18;
         string debugtext = "";
         debugtext += $"\nDebug string:\n{debugString}";
-        debugtext += $"\nDebug Update string:\n{debugUpdateString}";
+        debugtext += $"\n\nDebug Update string:{debugUpdateString}";
 
-        GUI.Label(labelRect, debugtext);
+        //GUI.Label(labelRect, debugtext);
     }
+#endif
 }

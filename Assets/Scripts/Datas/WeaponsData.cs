@@ -1,7 +1,10 @@
 using UnityEngine;
 
+[ExecuteInEditMode]
 public class WeaponsData : MonoBehaviour
 {
+    public GameManager manager;
+    public bool update;
     [Header("Data")]
     //swords
     public Transform sword;
@@ -24,7 +27,55 @@ public class WeaponsData : MonoBehaviour
     public float fontSize = 15;
     public float dataFontSize = 15;
     public Color[] colors = new Color[12];
+#if UNITY_EDITOR
+    private void Update()
+    {
+        if (update)
+        {
+            update = false;
+            manager.shopInventory.leftArmModules.Clear();
+            manager.shopInventory.rightArmModules.Clear();
 
+            Transform[] transforms = transform.GetComponentsInChildren<Transform>();
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform t = transforms[i];
+                if (t == transform) continue;
+
+                float dmg = t.localPosition.z / valuesRange;
+                float kbk = t.localPosition.x / valuesRange;
+                float spd = t.localPosition.y / valuesRange;
+
+                ArmModule module = new ArmModule();
+                module.name = t.name[0].ToString().ToUpper() + t.name.Substring(1);
+
+                switch (i)
+                {
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                        module.moduleType = ArmModule.ArmModuleType.SWORD; break;
+                    case 5:
+                    case 6:
+                    case 7:
+                    case 8:
+                        module.moduleType = ArmModule.ArmModuleType.PUNCH; break;
+                    case 9:
+                    case 10:
+                    case 11:
+                    case 12:
+                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
+                }
+                module.damage = dmg;
+                module.knockback = kbk;
+                module.speed = spd;
+
+                manager.shopInventory.leftArmModules.Add(module);
+                manager.shopInventory.rightArmModules.Add(module);
+            }
+        }
+    }
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.white;
@@ -61,4 +112,5 @@ public class WeaponsData : MonoBehaviour
             UtilsFunctions.DrawGizmoString(text, tPos, Color.white, Vector2.one, dataFontSize);
         }
     }
+#endif
 }
