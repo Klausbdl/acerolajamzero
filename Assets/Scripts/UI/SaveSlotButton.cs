@@ -27,4 +27,9 @@ public class SaveSlotButton : MonoBehaviour
     {
         GameManager.Instance.uiManager.CenterToItem(GetComponent<RectTransform>());
     }
+
+    public void DeleteSave()
+    {
+        GameManager.Instance.DeleteSave(id);
+    }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using static UnityEditor.Progress;
 
 [Serializable]
 public class Inventory
@@ -10,11 +11,23 @@ public class Inventory
     public List<LegModule> legModules = new List<LegModule>();
 }
 [Serializable]
-public class ItemModule
+public class ItemModule : IComparable<ItemModule>
 {
     public string name;
-
+    public int cost;
     public ItemModule() { }
+
+    public int CompareTo(ItemModule other)
+    {
+        if (other == null)
+        {
+            return 1;
+        }
+        else
+        {
+            return name.CompareTo(other.name);
+        }
+    }
 }
 [Serializable]
 public class ArmModule : ItemModule
@@ -29,6 +42,7 @@ public class ArmModule : ItemModule
     public float damage;
     public float knockback;
     public float speed;
+    public int blendShapeIndex;
 
     public ArmModule() { }
 }

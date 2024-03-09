@@ -9,6 +9,8 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.LookDev;
 using System.Collections;
+using static Cinemachine.DocumentationSortingAttribute;
+using Unity.VisualScripting;
 
 public class UIManager : MonoBehaviour
 {
@@ -46,8 +48,24 @@ public class UIManager : MonoBehaviour
     public Slider musicAudioSlider;
     public Slider fxAudioSlider;
     #endregion
+    [Header("Shop")]
+    #region shop
+    //level up
+    public AttributeBuy[] attributesList;
+    public TextMeshProUGUI costResultText;
+    [SerializeField] int nextLevelCost;
+    //arm shop
+    public TextMeshProUGUI armsDisplayInfoText;
+    public Button buyLeftButton;
+    public Button buyRightButton;
+    ItemModule currentArmModule;
+    //leg shop
+    public TextMeshProUGUI legsDisplayInfoText;
+    public Button buyLegButton;
+    ItemModule currentLegModule;
+    #endregion
     [Header("Inventory Menu")]
-    //stats
+    #region stats
     public UIStatsRenderer statsRenderer;
     public TextMeshProUGUI vitText;
     public TextMeshProUGUI defText;
@@ -55,7 +73,9 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI strText;
     public TextMeshProUGUI dexText;
     public TextMeshProUGUI jmpText;
-    //inventory
+    public TextMeshProUGUI lvlText;
+    #endregion
+    #region inventory
     public GameObject moduleToggle;
     public GameObject leftArmContent;
     public TextMeshProUGUI leftArmSlotCounterText;
@@ -65,10 +85,15 @@ public class UIManager : MonoBehaviour
     public List<Toggle> leftArmToggles = new List<Toggle>();
     public List<Toggle> rightArmToggles = new List<Toggle>();
     public List<Toggle> legsToggles = new List<Toggle>();
+    #endregion
     [Header("HUD")]
+    #region hud
     public UICircleRenderer hpCirclesRenderer;
     public TextMeshProUGUI currencyText;
     public TextMeshProUGUI timerText;
+    #endregion
+
+    float blendDuration = 0.15f;
 
     private void Start()
     {
@@ -328,6 +353,146 @@ public class UIManager : MonoBehaviour
         savesScrollRect.verticalNormalizedPosition = normPosBottomTop;
     }
 
+    #region shop
+    public void UpdateArmShop(string name) //updates the display text and buttons
+    {
+        ArmModule module = GameManager.Instance.shopInventory.leftArmModules.FirstOrDefault(x => x.name.ToLower() == name.ToLower());
+        
+        if(module == null) { Debug.LogWarning($"Module {name} not found"); return; }
+        
+        currentArmModule = module;
+
+        int cost = module.cost + (module.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
+        
+        armsDisplayInfoText.text = $"<b>{module.name}</b>\r\n  {module.moduleType.ToSafeString()}\r\n\r\n<indent=0%>Damage:<indent=70%>{(module.damage*10).ToString("0.00")}\r\n<indent=0%>Knockback:<indent=70%>{(module.knockback * 10).ToString("0.00")}\r\n<indent=0%>Atk Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}\r\n<indent=0%>\r\nCost: {cost}";
+
+        bool canBuy = GameManager.Instance.PlayerAttributes.currency >= cost;
+        buyLeftButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.leftArmModules.Any(x => x.name.ToLower() == name.ToLower());
+        buyRightButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.rightArmModules.Any(x => x.name.ToLower() == name.ToLower());
+    }
+    public void BuyArmModule(int side)
+    {
+        if (side == 0) //left
+        {
+            GameManager.Instance.currentSave.playerInventory.leftArmModules.Add(currentArmModule as ArmModule);
+            buyLeftButton.interactable = false;
+        }
+        else
+        {
+            GameManager.Instance.currentSave.playerInventory.rightArmModules.Add(currentArmModule as ArmModule);
+            buyRightButton.interactable = false;
+        }
+        int cost = currentArmModule.cost + (currentArmModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
+        GameManager.Instance.currentSave.attributes.currency -= cost;
+        UpdateStats(GameManager.Instance.currentSave.attributes);
+        UpdateInventory(GameManager.Instance.currentSave);
+    }
+
+    public void UpdateLegShop(string name) //updates the display text and buttons
+    {
+        LegModule module = GameManager.Instance.shopInventory.legModules.FirstOrDefault(x => x.name.ToLower() == name.ToLower());
+
+        if (module == null) { Debug.LogWarning($"Module {name} not found"); return; }
+
+        currentLegModule = module;
+
+        int cost = module.cost + (module.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
+
+        legsDisplayInfoText.text = $"<b>{module.name}</b>\r\n\r\n<indent=0%>Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}\r\n<indent=0%>Jump:<indent=70%>{(module.jump * 10).ToString("0.00")}\r\n\r\n<indent=0%>\r\nCost: {cost}";
+
+        bool canBuy = GameManager.Instance.PlayerAttributes.currency >= cost;
+        buyLegButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.legModules.Any(x => x.name.ToLower() == name.ToLower());
+    }
+    public void BuyLegModule()
+    {
+        GameManager.Instance.currentSave.playerInventory.legModules.Add(currentLegModule as LegModule);
+        buyLegButton.interactable = false;
+
+        int cost = currentLegModule.cost + (currentLegModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
+        GameManager.Instance.currentSave.attributes.currency -= cost;
+        UpdateStats(GameManager.Instance.currentSave.attributes);
+        UpdateInventory(GameManager.Instance.currentSave);
+    }
+
+    public void UpdateLevelUp()
+    {
+        int level = GameManager.Instance.currentSave.attributes.Level;
+        nextLevelCost = (int)(0.0012f * level * level) + (int)(1.35f * level) + 10;
+        costResultText.text = $"<align=left>Level<line-height=0%>\r\n<align=right>{level}<line-height=110%>\r\n<align=left>Cost<line-height=0%>\r\n<align=right>{nextLevelCost}<line-height=110%>";
+
+        for (int i = 0; i < attributesList.Length; i++)
+        {
+            bool canBuyNext = nextLevelCost <= GameManager.Instance.currentSave.attributes.currency;
+            
+            switch (i)
+            {
+                case 0:
+                    attributesList[i].buyButton.interactable = canBuyNext && GameManager.Instance.PlayerAttributes.vitality < 100;
+                    attributesList[i].refundButton.interactable = GameManager.Instance.PlayerAttributes.vitality > 1;
+                    attributesList[i].displayValue.text = GameManager.Instance.PlayerAttributes.vitality.ToString(); break;
+                case 1:
+                    attributesList[i].buyButton.interactable = canBuyNext && GameManager.Instance.PlayerAttributes.defense < 100;
+                    attributesList[i].refundButton.interactable = GameManager.Instance.PlayerAttributes.defense > 1; 
+                    attributesList[i].displayValue.text = GameManager.Instance.PlayerAttributes.defense.ToString(); break;
+                case 2:
+                    attributesList[i].buyButton.interactable = canBuyNext && GameManager.Instance.PlayerAttributes.agility < 100;
+                    attributesList[i].refundButton.interactable = GameManager.Instance.PlayerAttributes.agility > 1;
+                    attributesList[i].displayValue.text = GameManager.Instance.PlayerAttributes.agility.ToString(); break;
+                case 3:
+                    attributesList[i].buyButton.interactable = canBuyNext && GameManager.Instance.PlayerAttributes.strength < 100;
+                    attributesList[i].refundButton.interactable = GameManager.Instance.PlayerAttributes.strength > 1;
+                    attributesList[i].displayValue.text = GameManager.Instance.PlayerAttributes.strength.ToString(); break;
+                case 4:
+                    attributesList[i].buyButton.interactable = canBuyNext && GameManager.Instance.PlayerAttributes.dexterity < 100;
+                    attributesList[i].refundButton.interactable = GameManager.Instance.PlayerAttributes.dexterity > 1;
+                    attributesList[i].displayValue.text = GameManager.Instance.PlayerAttributes.dexterity.ToString(); break;
+                case 5:
+                    attributesList[i].buyButton.interactable = canBuyNext && GameManager.Instance.PlayerAttributes.jump < 100;
+                    attributesList[i].refundButton.interactable = GameManager.Instance.PlayerAttributes.jump > 1;
+                    attributesList[i].displayValue.text = GameManager.Instance.PlayerAttributes.jump.ToString(); break;
+            }
+        }
+    }
+    public void BuyLevelUp(string args)
+    {
+        string att = args.Split('_')[0]; //vit, def, agi, str, dex, jmp
+        bool buy = args.Split("_")[1] == "1"; //1: buy, -1 refund
+
+        switch(att)
+        {
+            case "vit":
+                GameManager.Instance.currentSave.attributes.vitality += buy ? 1 : -1;
+                break;
+            case "def":
+                GameManager.Instance.currentSave.attributes.defense += buy ? 1 : -1;
+                break;
+            case "agi":
+                GameManager.Instance.currentSave.attributes.agility += buy ? 1 : -1;
+                break;
+            case "str":
+                GameManager.Instance.currentSave.attributes.strength += buy ? 1 : -1;
+                break;
+            case "dex":
+                GameManager.Instance.currentSave.attributes.dexterity += buy ? 1 : -1;
+                break;
+            case "jmp":
+                GameManager.Instance.currentSave.attributes.jump += buy ? 1 : -1;
+                break;
+        }
+
+        if (buy) GameManager.Instance.currentSave.attributes.currency -= nextLevelCost;
+        else
+        {
+            int level = GameManager.Instance.PlayerAttributes.Level;
+            int previousCost = (int)(0.0012f * level * level) + (int)(1.35f * level) + 10;
+            GameManager.Instance.currentSave.attributes.currency += previousCost;
+        }
+        UpdateLevelUp();
+        UpdateStats(GameManager.Instance.currentSave.attributes);
+    }
+    #endregion
+
+    #region inventory
     public void UpdateStats(PlayerAttributes attributes)
     {
         vitText.text = "Vit " + attributes.vitality;
@@ -336,6 +501,7 @@ public class UIManager : MonoBehaviour
         strText.text = "Str " + attributes.strength;
         dexText.text = "Dex " + attributes.dexterity;
         jmpText.text = "Jmp " + attributes.jump;
+        lvlText.text = "Level " + attributes.Level;
         
         statsRenderer.statsValues[5] = attributes.vitality / 100f;
         statsRenderer.statsValues[0] = attributes.defense / 100f;
@@ -349,6 +515,9 @@ public class UIManager : MonoBehaviour
     }
     public void UpdateInventory(PlayerSave save)
     {
+        GameManager.Instance.currentSave.playerInventory.leftArmModules.Sort((a, b) => a.name.CompareTo(b.name));
+        GameManager.Instance.currentSave.playerInventory.rightArmModules.Sort((a, b) => a.name.CompareTo(b.name));
+
         Inventory inv = save.playerInventory;
 
         legsToggles.ForEach(t => { Destroy(t.gameObject); });
@@ -371,6 +540,8 @@ public class UIManager : MonoBehaviour
             });
             if (leg.name == save.equippedLegModule.name)
                 legToggle.isOn = true;
+
+            legsToggles.Add(legToggle);
         }
 
         foreach (var arm in inv.leftArmModules)
@@ -406,43 +577,11 @@ public class UIManager : MonoBehaviour
         
         //TODO: desabilitar toggles se tiver com todos os slots cheios
     }
-    public void UpdateHpCircles(int currHp)
-    {
-        //each circle = 100 hp
-        //each side+3 = 10hp
-        //max: 2200 --> 22 circles
-        hpCirclesRenderer.circles.Clear();
-        int howManyCircles = Mathf.CeilToInt(currHp / 100);
-        int remainder = currHp - (howManyCircles * 100);
-        for (int i = 0; i < howManyCircles+1; i++)
-        {
-            MyCircle c = new MyCircle();
-            c.timeOffset = -i * .1f;
-            c.sides = 13;
-            c.noise = 4.5f;
-            c.noiseSpeed = 1;
-            c.center.x = i * 40;
-            c.originalRadius = 15;
-            c.radiusSpeed = 7;
-            c.radiusMagnitude = .5f;
-            c.radiusAdd = 1;
-
-            if (i == howManyCircles)
-            {
-                c.sides = remainder / 10;
-                c.originalRadius = 20;
-                c.noise = -.125f * remainder + 17;
-                c.noiseSpeed = 1 + (1 - remainder/100f);
-            }
-
-            hpCirclesRenderer.circles.Add(c);
-        }
-        
-        hpCirclesRenderer.SetAllDirty();
-    }
-
     public void EquipLegModule(LegModule module)
     {
+        if (module.name.ToLower() == GameManager.Instance.currentSave.equippedLegModule.name.ToLower())
+            return;
+
         //update save
         GameManager.Instance.currentSave.equippedLegModule = module;
 
@@ -456,7 +595,7 @@ public class UIManager : MonoBehaviour
     }
     IEnumerator DeformLeg(List<SkinnedMeshRenderer> renderers, int blendShapeIndex)
     {
-        float duration = .15f;
+        float duration = blendDuration;
         float timer = 0;
 
         while(timer <= duration)
@@ -466,14 +605,14 @@ public class UIManager : MonoBehaviour
             foreach (var r in renderers)
             {
                 if(blendShapeIndex == -1)
-                    for(int i = 0 ; i < 5; i++)
+                    for(int i = 0 ; i < 6; i++)
                     {
                         if (r.GetBlendShapeWeight(i) > 0)
                             r.SetBlendShapeWeight(i, Mathf.Lerp(100, 0, timer / duration));
                     }                        
                 else
                 {
-                    for (int i = 0; i < 5; i++)
+                    for (int i = 0; i < 6; i++)
                     {
                         if(i == blendShapeIndex)
                             r.SetBlendShapeWeight(i, Mathf.Lerp(0, 100, timer / duration));
@@ -489,22 +628,27 @@ public class UIManager : MonoBehaviour
         }
         yield return null;
     }
-
     public void EquipArmModule(ArmModule module, int side, bool on, Toggle toggle)
     {
         if (on)
         {
             if(side == 0)
             {
-                if (GameManager.Instance.currentSave.equippedLeftArmModules.Any(m => m.name != module.name))
+                if (!GameManager.Instance.currentSave.equippedLeftArmModules.Any(m => m.name == module.name))
+                {
+                    StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[0], module.blendShapeIndex, true));
                     GameManager.Instance.currentSave.equippedLeftArmModules.Add(module);
+                }
 
                 leftArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
             }
             else
             {
-                if (GameManager.Instance.currentSave.equippedRightArmModules.Any(m => m.name != module.name))
+                if (!GameManager.Instance.currentSave.equippedRightArmModules.Any(m => m.name == module.name))
+                {
+                    StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[1], module.blendShapeIndex, true));
                     GameManager.Instance.currentSave.equippedRightArmModules.Add(module);
+                }
 
                 rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
             }
@@ -550,6 +694,7 @@ public class UIManager : MonoBehaviour
                 }
                 else
                 {
+                    StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[0], module.blendShapeIndex, false));
                     ArmModule mToRemove = GameManager.Instance.currentSave.equippedLeftArmModules.FirstOrDefault(m => m.name == module.name);
                     GameManager.Instance.currentSave.equippedLeftArmModules.Remove(mToRemove);
                     
@@ -568,9 +713,9 @@ public class UIManager : MonoBehaviour
                 }
                 else
                 {
+                    StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[1], module.blendShapeIndex, false));
                     ArmModule mToRemove = GameManager.Instance.currentSave.equippedRightArmModules.FirstOrDefault(m => m.name == module.name);
                     GameManager.Instance.currentSave.equippedRightArmModules.Remove(mToRemove);
-
                     rightArmToggles.ForEach(t => {
                         if (!t.isOn) t.interactable = true;
                     });
@@ -578,6 +723,69 @@ public class UIManager : MonoBehaviour
                 rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
             }
         }
-        
     }
+    IEnumerator DeformArm(SkinnedMeshRenderer renderer, int blendShapeIndex, bool on)
+    {
+        if (blendShapeIndex == -1) yield break;
+
+        float duration = blendDuration;
+        float timer = 0;
+
+        while (timer <= duration)
+        {
+            timer += Time.unscaledDeltaTime;
+
+            renderer.SetBlendShapeWeight(blendShapeIndex, Mathf.Lerp(on ? 0 : 100, on ? 100 : 0, timer / duration));
+
+            yield return new WaitForEndOfFrame();
+        }
+
+        yield return null;
+    }
+    #endregion
+
+    #region hud
+    public void UpdateHpCircles(int currHp)
+    {
+        //each circle = 100 hp
+        //each side+3 = 10hp
+        //max: 2200 --> 22 circles
+        hpCirclesRenderer.circles.Clear();
+        int howManyCircles = Mathf.CeilToInt(currHp / 100);
+        int remainder = currHp - (howManyCircles * 100);
+        for (int i = 0; i < howManyCircles + 1; i++)
+        {
+            MyCircle c = new MyCircle();
+            c.timeOffset = -i * .1f;
+            c.sides = 13;
+            c.noise = 4.5f;
+            c.noiseSpeed = 1;
+            c.center.x = i * 40;
+            c.originalRadius = 15;
+            c.radiusSpeed = 7;
+            c.radiusMagnitude = .5f;
+            c.radiusAdd = 1;
+
+            if (i == howManyCircles)
+            {
+                c.sides = remainder / 10;
+                c.originalRadius = 20;
+                c.noise = -.125f * remainder + 17;
+                c.noiseSpeed = 1 + (1 - remainder / 100f);
+            }
+
+            hpCirclesRenderer.circles.Add(c);
+        }
+
+        hpCirclesRenderer.SetAllDirty();
+    }
+    #endregion
+}
+
+[Serializable]
+public struct AttributeBuy
+{
+    public TextMeshProUGUI displayValue;
+    public Button buyButton;
+    public Button refundButton;
 }

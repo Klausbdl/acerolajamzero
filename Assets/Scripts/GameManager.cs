@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Burst.Intrinsics;
 using Unity.VisualScripting;
+using System.Linq;
 
 
 public class GameManager : Singleton<GameManager>
@@ -29,9 +30,12 @@ public class GameManager : Singleton<GameManager>
     public Light sunLight;
     
     [Header("Player Attributes")]
-    public PlayerAttributes playerAttributes;
     public List<PlayerSave> saves = new List<PlayerSave>();
     public PlayerSave currentSave;
+    public PlayerAttributes PlayerAttributes
+    {
+        get { return currentSave.attributes; }
+    }
 
     [Header("Game")]
     public bool pause = false;
@@ -142,14 +146,52 @@ public class GameManager : Singleton<GameManager>
     {
         if(slot == -1)
         {
-            int newSlot = saves.Count;
+            int newSlot = 0;
+            saves.Sort((a, b) => a.saveId.CompareTo(b.saveId));
+            foreach (var save in saves)
+            {
+                Debug.Log(save.saveId + " " + newSlot);
+                if (save.saveId == newSlot)
+                    newSlot++;
+                else
+                    break;
+            }
+
             Debug.Log($"Starting New game {newSlot}");
             
             PlayerPrefs.SetInt("Last Slot", newSlot);
-            //create new save
+            
+            #region create first save
             PlayerSave newsave = new PlayerSave();
             newsave.saveId = newSlot;
             currentSave = newsave;
+            saves.Add(currentSave);
+            saves.Sort((a, b) => a.saveId.CompareTo(b.saveId));
+            #endregion
+            #region recreate saves buttons
+            uiManager.saveSlotButtonList.ForEach(sb => Destroy(sb.gameObject));
+            uiManager.saveSlotButtonList.Clear();
+            foreach (var s in saves)
+            {
+                SaveSlotButton ssb = Instantiate(uiManager.saveSlotPrefab, uiManager.saveSlotsContent.transform).GetComponent<SaveSlotButton>();
+                uiManager.saveSlotButtonList.Add(ssb);
+                ssb.id = s.saveId;
+                ssb.GetComponentInChildren<TextMeshProUGUI>().text = s.ToString();
+
+                EventTrigger eventTrigger = ssb.GetComponent<EventTrigger>();
+                EventTrigger.Entry entry = new EventTrigger.Entry();
+                entry.eventID = EventTriggerType.Cancel;
+                entry.callback.AddListener((eventData) =>
+                {
+                    EventSystem.current.SetSelectedGameObject(uiManager.loadBackButton.gameObject);
+                });
+                eventTrigger.triggers.Add(entry);
+            }
+            
+            #endregion
+            uiManager.continueButton.interactable = true;
+            uiManager.loadButton.interactable = true;
+            uiManager.lastSlotText.text = $"Save Slot {newSlot}";
 
             //add first items to first save
             //arms
@@ -161,7 +203,6 @@ public class GameManager : Singleton<GameManager>
             currentSave.playerInventory.legModules.Add(shopInventory.legModules[0]);
             currentSave.equippedLegModule = currentSave.playerInventory.legModules[0];
 
-            saves.Add(currentSave);
             SaveToJson(currentSave, newSlot);
         }
         else
@@ -169,19 +210,23 @@ public class GameManager : Singleton<GameManager>
             Debug.Log($"Loading from slot: {slot}");
             
             PlayerPrefs.SetInt("Last Slot", slot);
+            uiManager.lastSlotText.text = $"Save Slot {PlayerPrefs.GetInt("Last Slot")}";
             currentSave = saves[slot];
         }
 
         //DEBUG
-        currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[3]);
-        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[5]);
-        currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[1]);
-        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[11]);
-        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[1]);
-        currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[2]);
-        currentSave.playerInventory.legModules.Add(shopInventory.legModules[1]);
-        currentSave.playerInventory.legModules.Add(shopInventory.legModules[2]);
-        currentSave.playerInventory.legModules.Add(shopInventory.legModules[3]);
+        #region debug
+        //currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[3]);
+        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[5]);
+        //currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[1]);
+        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[11]);
+        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[1]);
+        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[2]);
+        //currentSave.playerInventory.legModules.Add(shopInventory.legModules[1]);
+        //currentSave.playerInventory.legModules.Add(shopInventory.legModules[2]);
+        //currentSave.playerInventory.legModules.Add(shopInventory.legModules[3]);
+        currentSave.attributes.currency = 999999;
+        #endregion
 
         #region spawn player
         if (playerController == null)
@@ -197,6 +242,11 @@ public class GameManager : Singleton<GameManager>
         }
         else
             Debug.Log("Player already spawned");
+        //reseting blendshapes
+        foreach (var skin in playerController.bodyParts)
+            for (var i = 0; i < 15; i++)
+                if (skin.GetBlendShapeWeight(i) != -1)
+                    skin.SetBlendShapeWeight(i, 0);
         #endregion
 
         uiManager.LoadPlayerSettings();
@@ -204,6 +254,9 @@ public class GameManager : Singleton<GameManager>
         Debug.Log("Loading Player Attributes");
         uiManager.UpdateStats(currentSave.attributes);
         uiManager.UpdateInventory(currentSave);
+        uiManager.UpdateArmShop("stone");
+        uiManager.UpdateLegShop("wheel");
+        uiManager.UpdateLevelUp();
 
         canvasAnimator.SetTrigger("Start Game");
     }
@@ -256,7 +309,7 @@ public class GameManager : Singleton<GameManager>
                     saves.Add(save);
                     SaveSlotButton ssb = Instantiate(uiManager.saveSlotPrefab, uiManager.saveSlotsContent.transform).GetComponent<SaveSlotButton>();
                     uiManager.saveSlotButtonList.Add(ssb);
-                    ssb.id = i;
+                    ssb.id = save.saveId;
                     ssb.GetComponentInChildren<TextMeshProUGUI>().text = save.ToString();
 
                     EventTrigger eventTrigger = ssb.GetComponent<EventTrigger>();
@@ -282,6 +335,33 @@ public class GameManager : Singleton<GameManager>
             Debug.Log("No saves found");
             uiManager.continueButton.interactable = false;
             uiManager.loadButton.interactable = false;
+            PlayerPrefs.DeleteKey("Last Slot");
+        }
+    }
+    public void SaveGame()
+    {
+        SaveToJson(currentSave.save, currentSave.saveId);
+    }
+    public void DeleteSave(int id)
+    {
+        string originalPath = Application.dataPath + $"/Saves/save {id}.save";
+
+        if (File.Exists(originalPath))
+        {
+            File.Delete(originalPath);
+        }
+
+        SaveSlotButton saveSlotToDelete = uiManager.saveSlotButtonList.FirstOrDefault(x => x.id == id);
+        int indexToDelete = saveSlotToDelete.id;
+        Destroy(saveSlotToDelete.gameObject);
+        uiManager.saveSlotButtonList.Remove(saveSlotToDelete);
+        PlayerSave saveToDelete = saves.FirstOrDefault(x => x.saveId == id);
+        saves.Remove(saveToDelete);
+
+        if(PlayerPrefs.GetInt("Last Slot") == saveToDelete.saveId)
+        {
+            uiManager.continueButton.interactable = false;
+            uiManager.lastSlotText.text = "";
             PlayerPrefs.DeleteKey("Last Slot");
         }
     }

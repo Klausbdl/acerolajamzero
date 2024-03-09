@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteInEditMode]
@@ -52,19 +53,40 @@ public class WeaponsData : MonoBehaviour
                 switch (i)
                 {
                     case 1:
+                        module.blendShapeIndex = 3;
+                        module.moduleType = ArmModule.ArmModuleType.SWORD; break;
                     case 2:
+                        module.blendShapeIndex = 4;
+                        module.moduleType = ArmModule.ArmModuleType.SWORD; break;
                     case 3:
+                        module.blendShapeIndex = 5;
+                        module.moduleType = ArmModule.ArmModuleType.SWORD; break;
                     case 4:
+                        module.blendShapeIndex = 6;
                         module.moduleType = ArmModule.ArmModuleType.SWORD; break;
                     case 5:
+                        module.blendShapeIndex = -1;
+                        module.moduleType = ArmModule.ArmModuleType.PUNCH; break;
                     case 6:
+                        module.blendShapeIndex = 0;
+                        module.moduleType = ArmModule.ArmModuleType.PUNCH; break;
                     case 7:
+                        module.blendShapeIndex = 1;
+                        module.moduleType = ArmModule.ArmModuleType.PUNCH; break;
                     case 8:
+                        module.blendShapeIndex = 2;
                         module.moduleType = ArmModule.ArmModuleType.PUNCH; break;
                     case 9:
+                        module.blendShapeIndex = 7;
+                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
                     case 10:
+                        module.blendShapeIndex = 8;
+                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
                     case 11:
+                        module.blendShapeIndex = 9;
+                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
                     case 12:
+                        module.blendShapeIndex = 10;
                         module.moduleType = ArmModule.ArmModuleType.CANNON; break;
                 }
                 module.damage = dmg;
