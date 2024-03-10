@@ -6,7 +6,7 @@ public class PlayerController : MonoBehaviour
     [HideInInspector] public CharacterController controller;
     public Transform camAnchor;
     public Camera mainCamera;
-    [HideInInspector] public Animator animator;
+    public Animator animator;
     public Transform[] bones;
     public bool isPlaying = false;
 
@@ -24,7 +24,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Movement")]
     public LayerMask groundMask;
-    float speedMultiplier = 1;
+    public float speedMultiplier = 1;
     Vector3 velocity;
     Vector3 inputDir;
     Vector3 lastDir;
@@ -36,6 +36,7 @@ public class PlayerController : MonoBehaviour
     float rollTimer;
 
     [Header("Combat")]
+    #region combat
     public LayerMask hitableMask;
     bool lockRotation;
     int combo = 0;
@@ -58,13 +59,18 @@ public class PlayerController : MonoBehaviour
     float rightSwordPercentage;
     float rightShootPercentage;
     public GameObject bulletPrefab;
-
+    #endregion
     [Header("Attributes")]
     public int maxHp;
     public int curHp;
+    public float defense = 0; //5 to 50%
     public float speed;
-    public float damage;
-    public float attackSpeed = 1;
+    public float leftDamage;
+    public float rightDamage;
+    public float leftAttackSpeed = 1;
+    public float rightAttackSpeed = 1;
+    public float leftKnockback = 1;
+    public float rightKnockback = 1;
     public float jumpHeight;
 
     [Header("Debug")]
@@ -92,7 +98,8 @@ public class PlayerController : MonoBehaviour
     static int rightCombatXHash = Animator.StringToHash("Right Combat X");
     static int rightCombatYHash = Animator.StringToHash("Right Combat Y");
 
-    static int attackSpeedHash = Animator.StringToHash("Attack Speed");
+    static int leftAttackSpeedHash = Animator.StringToHash("Left Attack Speed");
+    static int rightAttackSpeedHash = Animator.StringToHash("Right Attack Speed");
     static int attackLeftHash = Animator.StringToHash("Attack Left");
     static int attackRightHash = Animator.StringToHash("Attack Right");
     #endregion
@@ -100,7 +107,6 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        animator = GetComponent<Animator>();
 
         camAnchor = GameObject.Find("Cam Anchor").transform;
         mainCamera = GameObject.Find("Creature Camera").GetComponent<Camera>();
@@ -141,8 +147,6 @@ public class PlayerController : MonoBehaviour
         bool aim = Input.GetAxis("Aim L") > 0 || Input.GetAxis("Aim R") > 0;
         #endregion
 
-        UpdateModulePercentages(); //move this to when the player starts instead of update
-
         #region combat---------------------------------------------
         bool attackedLeft = Input.GetButton("Fire1");
         bool attackedRight = Input.GetButton("Fire2");
@@ -158,7 +162,8 @@ public class PlayerController : MonoBehaviour
             
             ProcessCombo();
             
-            animator.SetFloat(attackSpeedHash, attackSpeed);
+            animator.SetFloat(leftAttackSpeedHash, leftAttackSpeed);
+            animator.SetFloat(rightAttackSpeedHash, rightAttackSpeed);
             animator.SetTrigger(attackedLeft ? attackLeftHash : attackRightHash);
             
             attackTimer = attackDuration;
@@ -309,7 +314,7 @@ public class PlayerController : MonoBehaviour
         
         lastAttackSide = currAttackSide;
     }
-    void UpdateModulePercentages()
+    public void UpdateModulePercentages()
     {
         #region left arm
         float total = leftPunchValue + leftSwordValue + leftShootValue;
@@ -338,6 +343,8 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat(rightCombatXHash, combatX);
         animator.SetFloat(rightCombatYHash, combatY);
         #endregion
+
+        animator.SetFloat(speedMultiHash, speedMultiplier);
     }
 
     //called from animation trigger
@@ -384,6 +391,8 @@ public class PlayerController : MonoBehaviour
         Transform boneToUse = currAttackSide == 0 ? bones[0] : bones[1];
         float armDistance = 0;
         float radius = .5f;
+        float damage = currAttackSide == 0 ? leftDamage : rightDamage;
+        float knockback = currAttackSide == 0 ? leftKnockback : rightKnockback;
 
         switch (i)
         {
@@ -413,7 +422,7 @@ public class PlayerController : MonoBehaviour
                 for (int j = 0; j < results.Length; j++)
                     if (results[j].collider != null)
                         if (results[j].collider.TryGetComponent(out IDamagable hitable))
-                            hitable.Damage(1, explosionForce, explosionUpward); //TODO: change to damage
+                            hitable.Damage(damage, explosionForce * knockback, explosionUpward);
         }
         else //shoot stuff
         {
@@ -421,7 +430,7 @@ public class PlayerController : MonoBehaviour
                 (transform.forward + new Vector3(0, -camAnchor.forward.y + shootHeightOffset, 0)).normalized
                 : transform.forward;
             Bullet newBullet = Instantiate(bulletPrefab, boneToUse.position + boneToUse.up, Quaternion.LookRotation(dir)).GetComponent<Bullet>();
-            newBullet.SetBullet(1, 100, dir);
+            newBullet.SetBullet(damage, 100, dir); //TODO: adjust bullet speed
         }
     }
 

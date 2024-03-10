@@ -55,14 +55,28 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI costResultText;
     [SerializeField] int nextLevelCost;
     //arm shop
+    [Space(8)]
     public TextMeshProUGUI armsDisplayInfoText;
     public Button buyLeftButton;
     public Button buyRightButton;
     ItemModule currentArmModule;
+    int SlotCost
+    {
+        get { return 100 + (int)(200 * ((GameManager.Instance.currentSave.playerInventory.slots.Sum() - 2) / 22f)); }
+    }
+    int ArmModuleCost
+    {
+        get { return currentArmModule.cost + (currentArmModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f)); }
+    }
     //leg shop
+    [Space(8)]
     public TextMeshProUGUI legsDisplayInfoText;
     public Button buyLegButton;
     ItemModule currentLegModule;
+    int LegModuleCost
+    {
+        get { return currentLegModule.cost + (currentLegModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f)); }
+    }
     #endregion
     [Header("Inventory Menu")]
     #region stats
@@ -183,7 +197,7 @@ public class UIManager : MonoBehaviour
             PlayerPrefs.SetFloat("Config.Master Volume", 1);
             masterAudioSlider.value = 1;
         }
-        masterMixer.SetFloat("Master Volume", UtilsFunctions.LinearToDecibel(masterAudioSlider.value));
+        masterMixer.SetFloat("Master Volume", UtilsFunctions.LinearToDecibel(PlayerPrefs.GetFloat("Config.Master Volume")));
 
         //audio music
         if (PlayerPrefs.HasKey("Config.Music Volume"))
@@ -193,7 +207,7 @@ public class UIManager : MonoBehaviour
             PlayerPrefs.SetFloat("Config.Music Volume", .8f);
             musicAudioSlider.value = .8f;
         }
-        masterMixer.SetFloat("Music Volume", UtilsFunctions.LinearToDecibel(masterAudioSlider.value));
+        masterMixer.SetFloat("Music Volume", UtilsFunctions.LinearToDecibel(PlayerPrefs.GetFloat("Config.Music Volume")));
 
         //audio fxs
         if (PlayerPrefs.HasKey("Config.FX Volume"))
@@ -203,7 +217,7 @@ public class UIManager : MonoBehaviour
             PlayerPrefs.SetFloat("Config.FX Volume", .8f);
             fxAudioSlider.value = .8f;
         }
-        masterMixer.SetFloat("FX Volume", UtilsFunctions.LinearToDecibel(masterAudioSlider.value));
+        masterMixer.SetFloat("FX Volume", UtilsFunctions.LinearToDecibel(PlayerPrefs.GetFloat("Config.FX Volume")));
         #endregion
 
         PlayerPrefs.Save();
@@ -356,36 +370,70 @@ public class UIManager : MonoBehaviour
     #region shop
     public void UpdateArmShop(string name) //updates the display text and buttons
     {
+        if (name == "slots")//if buying slots
+        {
+            currentArmModule = null;
+            armsDisplayInfoText.text = $"<b>Slots</b>\r\nSlots to equip" +
+                    $"\r\nmore Arm Modules\r\n\r\nCurrent:" +
+                    $"\r\n<indent=0%>Left:<indent=70%>{GameManager.Instance.currentSave.playerInventory.slots[0]}" +
+                    $"\r\n<indent=0%>Right:<indent=70%>{GameManager.Instance.currentSave.playerInventory.slots[1]}<indent=0%>" +
+                    $"\r\nCost: {(GameManager.Instance.currentSave.playerInventory.slots.Sum() == 24 ? "Full" : SlotCost)}";
+
+            bool canBuySlot = GameManager.Instance.PlayerAttributes.currency >= SlotCost;
+            buyLeftButton.interactable = canBuySlot && GameManager.Instance.currentSave.playerInventory.slots[0] < 12;
+            buyRightButton.interactable = canBuySlot && GameManager.Instance.currentSave.playerInventory.slots[1] < 12;
+            return;
+        }
+
         ArmModule module = GameManager.Instance.shopInventory.leftArmModules.FirstOrDefault(x => x.name.ToLower() == name.ToLower());
         
         if(module == null) { Debug.LogWarning($"Module {name} not found"); return; }
         
         currentArmModule = module;
-
-        int cost = module.cost + (module.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
         
-        armsDisplayInfoText.text = $"<b>{module.name}</b>\r\n  {module.moduleType.ToSafeString()}\r\n\r\n<indent=0%>Damage:<indent=70%>{(module.damage*10).ToString("0.00")}\r\n<indent=0%>Knockback:<indent=70%>{(module.knockback * 10).ToString("0.00")}\r\n<indent=0%>Atk Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}\r\n<indent=0%>\r\nCost: {cost}";
-
-        bool canBuy = GameManager.Instance.PlayerAttributes.currency >= cost;
+        bool canBuy = GameManager.Instance.PlayerAttributes.currency >= ArmModuleCost;
         buyLeftButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.leftArmModules.Any(x => x.name.ToLower() == name.ToLower());
         buyRightButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.rightArmModules.Any(x => x.name.ToLower() == name.ToLower());
+        
+        armsDisplayInfoText.text = $"<b>{module.name}</b>\r\n  {module.moduleType.ToSafeString()}" +
+            $"\r\n\r\n<indent=0%>Damage:<indent=70%>{(module.damage*10).ToString("0.00")}" +
+            $"\r\n<indent=0%>Knockback:<indent=70%>{(module.knockback * 10).ToString("0.00")}" +
+            $"\r\n<indent=0%>Atk Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}" +
+            $"\r\n<indent=0%>" +
+            $"\r\nCost: {(buyLeftButton.interactable || buyRightButton.interactable ? ArmModuleCost : "-")}";
     }
     public void BuyArmModule(int side)
     {
         if (side == 0) //left
         {
-            GameManager.Instance.currentSave.playerInventory.leftArmModules.Add(currentArmModule as ArmModule);
-            buyLeftButton.interactable = false;
+            if(currentArmModule != null)
+            {
+                GameManager.Instance.currentSave.playerInventory.leftArmModules.Add(currentArmModule as ArmModule);
+                buyLeftButton.interactable = false;
+            }
+            else //buy left slot
+            {
+                GameManager.Instance.currentSave.playerInventory.slots[0] += 1;
+            }
         }
         else
         {
-            GameManager.Instance.currentSave.playerInventory.rightArmModules.Add(currentArmModule as ArmModule);
-            buyRightButton.interactable = false;
+            if (currentArmModule != null)
+            {
+                GameManager.Instance.currentSave.playerInventory.rightArmModules.Add(currentArmModule as ArmModule);
+                buyRightButton.interactable = false;
+            }
+            else //buy right slot
+            {
+                GameManager.Instance.currentSave.playerInventory.slots[1] += 1;
+            }
         }
-        int cost = currentArmModule.cost + (currentArmModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
-        GameManager.Instance.currentSave.attributes.currency -= cost;
+        GameManager.Instance.currentSave.attributes.currency -= (currentArmModule != null ? ArmModuleCost : SlotCost);
         UpdateStats(GameManager.Instance.currentSave.attributes);
         UpdateInventory(GameManager.Instance.currentSave);
+
+        UpdateArmShop(currentArmModule != null ? currentArmModule.name.ToLower() : "slots");
+        AudioManager.Instance.PlayBuyModule();
     }
 
     public void UpdateLegShop(string name) //updates the display text and buttons
@@ -396,22 +444,24 @@ public class UIManager : MonoBehaviour
 
         currentLegModule = module;
 
-        int cost = module.cost + (module.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
-
-        legsDisplayInfoText.text = $"<b>{module.name}</b>\r\n\r\n<indent=0%>Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}\r\n<indent=0%>Jump:<indent=70%>{(module.jump * 10).ToString("0.00")}\r\n\r\n<indent=0%>\r\nCost: {cost}";
-
-        bool canBuy = GameManager.Instance.PlayerAttributes.currency >= cost;
+        bool canBuy = GameManager.Instance.PlayerAttributes.currency >= LegModuleCost;
         buyLegButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.legModules.Any(x => x.name.ToLower() == name.ToLower());
+
+        legsDisplayInfoText.text = $"<b>{module.name}</b>" +
+            $"\r\n\r\n<indent=0%>Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}" +
+            $"\r\n<indent=0%>Jump:<indent=70%>{(module.jump * 10).ToString("0.00")}" +
+            $"\r\n\r\n<indent=0%>" +
+            $"\r\nCost: {(buyLegButton.interactable ? LegModuleCost : "-")}";
     }
     public void BuyLegModule()
     {
         GameManager.Instance.currentSave.playerInventory.legModules.Add(currentLegModule as LegModule);
         buyLegButton.interactable = false;
 
-        int cost = currentLegModule.cost + (currentLegModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f));
-        GameManager.Instance.currentSave.attributes.currency -= cost;
+        GameManager.Instance.currentSave.attributes.currency -= LegModuleCost;
         UpdateStats(GameManager.Instance.currentSave.attributes);
         UpdateInventory(GameManager.Instance.currentSave);
+        AudioManager.Instance.PlayBuyModule();
     }
 
     public void UpdateLevelUp()
@@ -489,6 +539,54 @@ public class UIManager : MonoBehaviour
         }
         UpdateLevelUp();
         UpdateStats(GameManager.Instance.currentSave.attributes);
+        AudioManager.Instance.PlayBuyModule();
+    }
+
+    public void UpdateBodyDeformation()
+    {
+        StartCoroutine(DeformBody());
+    }
+    IEnumerator DeformBody()
+    {
+        float duration = 2;
+        float timer = 0;
+        SkinnedMeshRenderer r = GameManager.Instance.playerController.bodyParts[4];
+        PlayerAttributes p = GameManager.Instance.PlayerAttributes;
+        while (timer <= duration)
+        {
+            timer += Time.unscaledDeltaTime;
+            float alpha = timer / duration;
+
+            for (int i = 0; i < r.sharedMesh.blendShapeCount; i++)
+            {
+                switch (i)
+                {
+                    case 0:
+                        r.SetBlendShapeWeight(i, Mathf.Lerp(r.GetBlendShapeWeight(i), p.vitality, alpha));
+                        break;
+                    case 1:
+                        r.SetBlendShapeWeight(i, Mathf.Lerp(r.GetBlendShapeWeight(i), p.defense, alpha));
+                        break;
+                    case 2:
+                        r.SetBlendShapeWeight(i, Mathf.Lerp(r.GetBlendShapeWeight(i), p.agility, alpha));
+                        break;
+                    case 3:
+                        r.SetBlendShapeWeight(i, Mathf.Lerp(r.GetBlendShapeWeight(i), p.strength, alpha));
+                        break;
+                    case 4:
+                        r.SetBlendShapeWeight(i, Mathf.Lerp(r.GetBlendShapeWeight(i), p.dexterity, alpha));
+                        break;
+                    case 5:
+                        r.SetBlendShapeWeight(i, Mathf.Lerp(r.GetBlendShapeWeight(i), UtilsFunctions.Map(0, 10000, 0, 100, Mathf.Clamp(p.currency, 0, 10000)), alpha));
+                        break;
+                    case 6:
+                        r.SetBlendShapeWeight(i, Mathf.Lerp(r.GetBlendShapeWeight(i), p.jump, alpha));
+                        break;
+                }
+            }
+            yield return new WaitForEndOfFrame();
+        }
+        yield return null;
     }
     #endregion
 
@@ -536,8 +634,10 @@ public class UIManager : MonoBehaviour
             legToggle.GetComponentInChildren<TextMeshProUGUI>().text = leg.name;
             legToggle.onValueChanged.AddListener(on =>
             {
-                if (on) EquipLegModule(leg);
+                if (on)
+                    EquipLegModule(leg);
             });
+
             if (leg.name == save.equippedLegModule.name)
                 legToggle.isOn = true;
 
@@ -574,14 +674,9 @@ public class UIManager : MonoBehaviour
 
         leftArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(0)}";
         rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(1)}";
-        
-        //TODO: desabilitar toggles se tiver com todos os slots cheios
     }
     public void EquipLegModule(LegModule module)
     {
-        if (module.name.ToLower() == GameManager.Instance.currentSave.equippedLegModule.name.ToLower())
-            return;
-
         //update save
         GameManager.Instance.currentSave.equippedLegModule = module;
 
@@ -597,29 +692,32 @@ public class UIManager : MonoBehaviour
     {
         float duration = blendDuration;
         float timer = 0;
-
         while(timer <= duration)
         {
             timer += Time.unscaledDeltaTime;
+            float alpha = timer / duration;
 
             foreach (var r in renderers)
             {
                 if(blendShapeIndex == -1)
-                    for(int i = 0 ; i < 6; i++)
+                    for(int i = 0 ; i < r.sharedMesh.blendShapeCount; i++)
                     {
                         if (r.GetBlendShapeWeight(i) > 0)
-                            r.SetBlendShapeWeight(i, Mathf.Lerp(100, 0, timer / duration));
+                            r.SetBlendShapeWeight(i, Mathf.Lerp(100, 0, alpha));
                     }                        
                 else
                 {
-                    for (int i = 0; i < 6; i++)
+                    for (int i = 0; i < r.sharedMesh.blendShapeCount; i++)
                     {
                         if(i == blendShapeIndex)
-                            r.SetBlendShapeWeight(i, Mathf.Lerp(0, 100, timer / duration));
+                        {
+                            if (r.GetBlendShapeWeight(blendShapeIndex) < 100)
+                                r.SetBlendShapeWeight(i, Mathf.Lerp(0, 100, alpha));
+                        }                            
                         else
                         {
                             if (r.GetBlendShapeWeight(i) > 0)
-                                r.SetBlendShapeWeight(i, Mathf.Lerp(100, 0, timer / duration));
+                                r.SetBlendShapeWeight(i, Mathf.Lerp(100, 0, alpha));
                         }
                     }
                 }
@@ -636,9 +734,9 @@ public class UIManager : MonoBehaviour
             {
                 if (!GameManager.Instance.currentSave.equippedLeftArmModules.Any(m => m.name == module.name))
                 {
-                    StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[0], module.blendShapeIndex, true));
                     GameManager.Instance.currentSave.equippedLeftArmModules.Add(module);
                 }
+                StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[0], module.blendShapeIndex, true));
 
                 leftArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
             }
@@ -646,9 +744,9 @@ public class UIManager : MonoBehaviour
             {
                 if (!GameManager.Instance.currentSave.equippedRightArmModules.Any(m => m.name == module.name))
                 {
-                    StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[1], module.blendShapeIndex, true));
                     GameManager.Instance.currentSave.equippedRightArmModules.Add(module);
                 }
+                StartCoroutine(DeformArm(GameManager.Instance.playerController.bodyParts[1], module.blendShapeIndex, true));
 
                 rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
             }
@@ -731,11 +829,15 @@ public class UIManager : MonoBehaviour
         float duration = blendDuration;
         float timer = 0;
 
+        if (renderer.GetBlendShapeWeight(blendShapeIndex) == (on ? 100 : 0))
+            yield break;
+
         while (timer <= duration)
         {
             timer += Time.unscaledDeltaTime;
+            float alpha = timer / duration;
 
-            renderer.SetBlendShapeWeight(blendShapeIndex, Mathf.Lerp(on ? 0 : 100, on ? 100 : 0, timer / duration));
+            renderer.SetBlendShapeWeight(blendShapeIndex, Mathf.Lerp(on ? 0 : 100, on ? 100 : 0, alpha));
 
             yield return new WaitForEndOfFrame();
         }

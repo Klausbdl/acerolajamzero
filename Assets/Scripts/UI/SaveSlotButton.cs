@@ -21,6 +21,7 @@ public class SaveSlotButton : MonoBehaviour
     public void LoadGame()
     {
         GameManager.Instance.OnPlayGameButton(id);
+        AudioManager.Instance.PlayPlayPress();
     }
 
     public void OnSelect(BaseEventData eventData)
@@ -31,5 +32,6 @@ public class SaveSlotButton : MonoBehaviour
     public void DeleteSave()
     {
         GameManager.Instance.DeleteSave(id);
+        AudioManager.Instance.PlayPlayPress();
     }
 }

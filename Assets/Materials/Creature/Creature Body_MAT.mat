@@ -84,8 +84,8 @@ Material:
     - _beatLength: 0.1
     - _pauseLength: 0.2
     m_Colors:
-    - _Black_Color: {r: 0.13007298, g: 0.58166337, b: 0.745283, a: 0}
-    - _Color: {r: 0.86774653, g: 0.9282662, b: 0.9433962, a: 1}
+    - _Black_Color: {r: 0.13007295, g: 0.5816633, b: 0.745283, a: 1}
+    - _Color: {r: 0.68330586, g: 0.89273953, b: 0.94509804, a: 1}
     - _Hurt_Color: {r: 1, g: 0, b: 0, a: 0}
     - _Pulse_Color: {r: 1, g: 0.514151, b: 0.514151, a: 0}
     - _Remap: {r: -0.83, g: 1, b: 0, a: 0}

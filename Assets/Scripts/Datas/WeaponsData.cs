@@ -78,16 +78,16 @@ public class WeaponsData : MonoBehaviour
                         module.moduleType = ArmModule.ArmModuleType.PUNCH; break;
                     case 9:
                         module.blendShapeIndex = 7;
-                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
+                        module.moduleType = ArmModule.ArmModuleType.GUN; break;
                     case 10:
                         module.blendShapeIndex = 8;
-                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
+                        module.moduleType = ArmModule.ArmModuleType.GUN; break;
                     case 11:
                         module.blendShapeIndex = 9;
-                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
+                        module.moduleType = ArmModule.ArmModuleType.GUN; break;
                     case 12:
                         module.blendShapeIndex = 10;
-                        module.moduleType = ArmModule.ArmModuleType.CANNON; break;
+                        module.moduleType = ArmModule.ArmModuleType.GUN; break;
                 }
                 module.damage = dmg;
                 module.knockback = kbk;

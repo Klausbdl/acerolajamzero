@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [Serializable]
@@ -29,6 +30,65 @@ public class PlayerSave
     public int GetAvailableSlots(int side)
     {
         return Mathf.Clamp(playerInventory.slots[side] - (side == 0 ? equippedLeftArmModules.Count : equippedRightArmModules.Count) + (playerInventory.slots[side] > 1 ? 0 : 1), 0, 12);
+    }
+
+    public float GetArmDamage(int side)
+    {
+        float d = 0;
+        switch (side)
+        {
+            case 0: equippedLeftArmModules.ForEach(x => d += x.damage); break;
+            case 1: equippedRightArmModules.ForEach(x => d += x.damage); break;
+        }
+        return d;
+    }
+    public float GetArmKnockback(int side)
+    {
+        float k = 0;
+        switch (side)
+        {
+            case 0: equippedLeftArmModules.ForEach(x => k += x.knockback); break;
+            case 1: equippedRightArmModules.ForEach(x => k += x.knockback); break;
+        }
+        return k;
+    }
+    public float GetArmSpeed(int side)
+    {
+        float s = 0;
+        switch (side)
+        {
+            case 0:
+                equippedLeftArmModules.ForEach(x => s += x.speed);
+                s /= equippedLeftArmModules.Count;
+                break;
+            case 1:
+                equippedRightArmModules.ForEach(x => s += x.speed);
+                s /= equippedRightArmModules.Count;
+                break;
+        }
+        return s + 0.6f;
+    }
+
+    public float GetAnimatorValue(ArmModule.ArmModuleType type, int side)
+    {
+        float v = 0;
+        int modulesCount;
+        int total;
+        switch (side)
+        {
+            default:
+            case 0:
+                modulesCount = equippedLeftArmModules.Where(m => m.moduleType == type).ToList().Count;
+                total = equippedLeftArmModules.Count;
+                break;
+            case 1:
+                modulesCount = equippedRightArmModules.Where(m => m.moduleType == type).ToList().Count;
+                total = equippedRightArmModules.Count;
+                break;
+        }
+        v = (float)modulesCount / total;
+        v = Mathf.Clamp(v, 0.01f, 1);
+        return v;
     }
 }
 

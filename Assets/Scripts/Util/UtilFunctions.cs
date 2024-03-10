@@ -1,6 +1,5 @@
-using System;
-using System.Linq;
 using UnityEngine;
+using System.Collections;
 
 public static class UtilsFunctions
 {
@@ -101,5 +100,34 @@ public static class UtilsFunctions
             dB = -144f;
         
         return dB;
+    }
+
+    public static IEnumerator FadeAudioSource(this AudioSource audioSource, float targetVolume, float fadeDuration, bool destroy = false, float delay = 0)
+    {
+        float startVolume = audioSource.volume;
+        float timer = 0;
+
+        if(delay != 0)
+            yield return new WaitForSeconds(delay);
+
+        audioSource.Play();
+
+        while (audioSource.volume != targetVolume && fadeDuration != 0)
+        {
+            timer += Time.unscaledDeltaTime;
+
+            audioSource.volume = Mathf.Lerp(startVolume, targetVolume, timer / fadeDuration);
+
+            yield return null;
+        }
+
+        audioSource.volume = targetVolume;
+
+        if (audioSource.volume <= 0)
+            audioSource.Stop();
+
+        //you can remove this code that destroys the source
+        if (destroy)
+            GameObject.Destroy(audioSource);
     }
 }

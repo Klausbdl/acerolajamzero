@@ -8,6 +8,7 @@ using TMPro;
 using Unity.Burst.Intrinsics;
 using Unity.VisualScripting;
 using System.Linq;
+using UnityEditor.Rendering;
 
 
 public class GameManager : Singleton<GameManager>
@@ -28,6 +29,8 @@ public class GameManager : Singleton<GameManager>
     public GameObject roomObject;
     public UIManager uiManager;
     public Light sunLight;
+    public AudioManager audioManager;
+    public AudioLibrary audioLibrary;
     
     [Header("Player Attributes")]
     public List<PlayerSave> saves = new List<PlayerSave>();
@@ -58,14 +61,23 @@ public class GameManager : Singleton<GameManager>
 
         ChangeSky("night");
 
-        EventSystem.current.SetSelectedGameObject(uiManager.startButton.gameObject);
-
         uiManager.LoadGraphicsAndAudio();
+        EventSystem.current.SetSelectedGameObject(uiManager.startButton.gameObject);
 
         foreach(var level in levels)
         {
             level.SetActive(false);
         }
+
+        AudioManager.Instance.PlayAudio(audioLibrary.computerHumming, AudioManager.AudioType.MUSIC, 2);
+
+        //StartCoroutine(LateStart());
+    }
+
+    IEnumerator LateStart()
+    {
+        yield return new WaitForEndOfFrame();
+        
     }
 
     public void Update()
@@ -127,6 +139,8 @@ public class GameManager : Singleton<GameManager>
         }
         #endregion
 
+        AudioManager.Instance.StopAudio(audioLibrary.computerHumming, 2);
+
         Debug.Log("End Start Game Coroutine");
     }
 
@@ -137,11 +151,21 @@ public class GameManager : Singleton<GameManager>
     IEnumerator CloseGameRoutine()
     {
         Debug.Log("Begin Close Game Coroutine");
-
+        yield return new WaitForSeconds(5);
+        AudioManager.Instance.PlayAudio(audioLibrary.computerHumming, AudioManager.AudioType.MUSIC, 1);
         Debug.Log("End Close Game Coroutine");
         yield return null;
     }
+    public void QuitApplication()
+    {
+        Application.Quit();
+    }
     //-------------------------------------------------------------------------- inside game
+    public void OnLoadButton()
+    {
+        //when clicking the load button, make the first slot selected
+        EventSystem.current.SetSelectedGameObject(uiManager.saveSlotsContent.GetComponentsInChildren<Button>()[0].gameObject);
+    }
     public void OnPlayGameButton(int slot)
     {
         if(slot == -1)
@@ -189,6 +213,7 @@ public class GameManager : Singleton<GameManager>
             }
             
             #endregion
+            
             uiManager.continueButton.interactable = true;
             uiManager.loadButton.interactable = true;
             uiManager.lastSlotText.text = $"Save Slot {newSlot}";
@@ -214,7 +239,7 @@ public class GameManager : Singleton<GameManager>
             currentSave = saves[slot];
         }
 
-        //DEBUG
+        //TODO: DEBUG
         #region debug
         //currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[3]);
         //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[5]);
@@ -242,11 +267,19 @@ public class GameManager : Singleton<GameManager>
         }
         else
             Debug.Log("Player already spawned");
-        //reseting blendshapes
+
+        Debug.Log("Updating player variables");
+        
+        //blend shapes
         foreach (var skin in playerController.bodyParts)
-            for (var i = 0; i < 15; i++)
+            for (var i = 0; i < skin.sharedMesh.blendShapeCount; i++)
                 if (skin.GetBlendShapeWeight(i) != -1)
                     skin.SetBlendShapeWeight(i, 0);
+        
+        uiManager.UpdateBodyDeformation();
+
+        //variables
+        UpdatePlayerVariables();
         #endregion
 
         uiManager.LoadPlayerSettings();
@@ -254,17 +287,49 @@ public class GameManager : Singleton<GameManager>
         Debug.Log("Loading Player Attributes");
         uiManager.UpdateStats(currentSave.attributes);
         uiManager.UpdateInventory(currentSave);
-        uiManager.UpdateArmShop("stone");
+        uiManager.UpdateArmShop("slots");
         uiManager.UpdateLegShop("wheel");
         uiManager.UpdateLevelUp();
 
         canvasAnimator.SetTrigger("Start Game");
+
+        audioManager.PlayAudio(audioLibrary.transition, AudioManager.AudioType.MUSIC, 0, false, 0);
     }
 
-    public void OnLoadButton()
+    public void UpdatePlayerVariables()
     {
-        //when clicking the load button, make the first slot selected
-        EventSystem.current.SetSelectedGameObject(uiManager.saveSlotsContent.GetComponentsInChildren<Button>()[0].gameObject);
+        //vitality
+        playerController.maxHp = PlayerAttributes.GetMaxHp();
+        playerController.curHp = playerController.maxHp;
+        //defense
+        playerController.defense = UtilsFunctions.Map(0, 100, 0, .5f, PlayerAttributes.defense);
+        //agility
+        playerController.speed = UtilsFunctions.Map(0, 100, 10, 20, PlayerAttributes.agility); //TODO: 20 wip
+        playerController.speedMultiplier = playerController.speed / 10f;
+        //strength
+        float damageMultiplier = UtilsFunctions.Map(0, 100, 1, 10, PlayerAttributes.strength);
+        playerController.leftDamage = currentSave.GetArmDamage(0) * damageMultiplier;
+        playerController.rightDamage = currentSave.GetArmDamage(1) * damageMultiplier;
+        //dex
+        float dexMultiplier = UtilsFunctions.Map(0, 100, 1, 2, PlayerAttributes.dexterity);
+        playerController.leftAttackSpeed = currentSave.GetArmSpeed(0) * dexMultiplier;
+        playerController.rightAttackSpeed = currentSave.GetArmSpeed(1) * dexMultiplier;
+        //jump
+        playerController.jumpHeight = UtilsFunctions.Map(0, 100, 4f, 10f, PlayerAttributes.jump);
+
+        //knockback
+        playerController.leftKnockback = currentSave.GetArmKnockback(0);
+        playerController.rightKnockback = currentSave.GetArmKnockback(1);
+
+        //animator variables
+        playerController.leftPunchValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.PUNCH, 0);
+        playerController.rightPunchValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.PUNCH, 1);
+        playerController.leftSwordValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.SWORD, 0);
+        playerController.rightSwordValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.SWORD, 1);
+        playerController.leftShootValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.GUN, 0);
+        playerController.rightShootValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.GUN, 1);
+
+        playerController.UpdateModulePercentages();
     }
 
     #region save system
@@ -366,11 +431,6 @@ public class GameManager : Singleton<GameManager>
         }
     }
     #endregion
-
-    public void QuitApplication()
-    {
-        Application.Quit();
-    }
     //-------------------------------------------------------------------------- inside run
     public void StartRun()
     {
@@ -404,6 +464,7 @@ public class GameManager : Singleton<GameManager>
         
         playerController.controller.enabled = true;
         playerController.isPlaying = true;
+        UpdatePlayerVariables();
 
         inRun = true;
         runTime = 0;
@@ -470,8 +531,6 @@ public class GameManager : Singleton<GameManager>
         //foreach (var p in probes)
         //    p.RenderProbe();
     }
-
-
 #if UNITY_EDITOR
     private void OnGUI()
     {

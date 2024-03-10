@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using static UnityEditor.Progress;
 
 [Serializable]
 public class Inventory
@@ -36,7 +35,7 @@ public class ArmModule : ItemModule
     {
         PUNCH = 0,
         SWORD,
-        CANNON
+        GUN
     }
     public ArmModuleType moduleType;
     public float damage;
