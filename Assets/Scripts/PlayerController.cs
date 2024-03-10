@@ -234,7 +234,7 @@ public class PlayerController : MonoBehaviour
         debugStringUpdate += $"\nmove: {move}";
         debugStringUpdate += $"\nlast dir: {lastDir}";
 #endif
-        controller.Move(move * speed * Time.deltaTime * speedMultiplier);
+        controller.Move(move * speed * Time.deltaTime);
         
         animator.SetFloat(speedHash, inputDir.magnitude);
 
@@ -383,6 +383,20 @@ public class PlayerController : MonoBehaviour
                 if ((left ? leftShootPercentage : rightShootPercentage) >= 0.33f)
                     AttackHitbox(2);
                 break;
+        }
+    }
+    public void PlaySFX(string args)
+    {
+        string[] audios = args.Split('_');
+
+        foreach (string audio in audios)
+        {
+            switch (audio)
+            {
+                case "footstep":
+                    AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.footsteps.RandomElement());
+                    break;
+            }
         }
     }
 

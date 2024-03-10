@@ -140,6 +140,11 @@ public class GameManager : Singleton<GameManager>
         #endregion
 
         AudioManager.Instance.StopAudio(audioLibrary.computerHumming, 2);
+        
+        //menu music
+        AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[0], AudioManager.AudioType.MUSIC, 2, true, 0, 0);
+        AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[1], AudioManager.AudioType.MUSIC, 2);
+        AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[2], AudioManager.AudioType.MUSIC, 2, true, 0, 0);
 
         Debug.Log("End Start Game Coroutine");
     }
@@ -293,7 +298,11 @@ public class GameManager : Singleton<GameManager>
 
         canvasAnimator.SetTrigger("Start Game");
 
-        audioManager.PlayAudio(audioLibrary.transition, AudioManager.AudioType.MUSIC, 0, false, 0);
+        //audios
+        audioManager.oneShotMusic.PlayOneShot(audioLibrary.transition);
+
+        AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[0], AudioManager.AudioType.MUSIC, 1, true, 3, 1);
+        AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[2], AudioManager.AudioType.MUSIC, 1, true, 3, 1);
     }
 
     public void UpdatePlayerVariables()
@@ -304,8 +313,8 @@ public class GameManager : Singleton<GameManager>
         //defense
         playerController.defense = UtilsFunctions.Map(0, 100, 0, .5f, PlayerAttributes.defense);
         //agility
-        playerController.speed = UtilsFunctions.Map(0, 100, 10, 20, PlayerAttributes.agility); //TODO: 20 wip
-        playerController.speedMultiplier = playerController.speed / 10f;
+        playerController.speed = UtilsFunctions.Map(0, 100, 10, 40, PlayerAttributes.agility); //TODO: 20 wip
+        playerController.speedMultiplier = UtilsFunctions.Map(0, 100, 1, 2, PlayerAttributes.agility);
         //strength
         float damageMultiplier = UtilsFunctions.Map(0, 100, 1, 10, PlayerAttributes.strength);
         playerController.leftDamage = currentSave.GetArmDamage(0) * damageMultiplier;

@@ -25,7 +25,7 @@ public class AudioManager : Singleton<AudioManager>
         oneShotFx.outputAudioMixerGroup = mixers[1];
     }
 
-    public void PlayAudio(AudioClip clip, AudioType type, float fadeDuration, bool loop = true, float delay = 0)
+    public void PlayAudio(AudioClip clip, AudioType type, float fadeDuration, bool loop = true, float delay = 0, float volume = 1, bool stopOnZero = false)
     {
         //use an old one or create a new one
         AudioSource newMusic = null;
@@ -44,7 +44,7 @@ public class AudioManager : Singleton<AudioManager>
         newMusic.clip = clip;
         newMusic.loop = loop;
         newMusic.volume = 0;
-        StartCoroutine(newMusic.FadeAudioSource(1, fadeDuration, false, delay));
+        StartCoroutine(newMusic.FadeAudioSource(volume, fadeDuration, false, delay, stopOnZero));
         sources.Add(newMusic);
     }
 
@@ -66,9 +66,9 @@ public class AudioManager : Singleton<AudioManager>
     public void PlayMouseClick() => oneShotFx.PlayOneShot(library.mouseClick);
     public void PlayButtonPress() => oneShotFx.PlayOneShot(library.buttonClick);
     public void PlayPlayPress() => oneShotFx.PlayOneShot(library.buttonPlayClick);
+    public void PlayTickPress() => oneShotFx.PlayOneShot(library.buttonTickClick);
     public void PlayButtonBackPress() => oneShotFx.PlayOneShot(library.buttonBackClick);
     public void PlayBuyModule() => oneShotFx.PlayOneShot(library.buyModule);
     public void PlayEquipModule() => oneShotFx.PlayOneShot(library.equipModule);
-    public void PlayUnequipModule() => oneShotFx.PlayOneShot(library.unequipModule);
-
+    public void PlayUnequipModule() => oneShotFx.PlayOneShot(library.unequipModule, 2.5f);
 }

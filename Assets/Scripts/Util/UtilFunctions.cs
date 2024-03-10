@@ -102,7 +102,7 @@ public static class UtilsFunctions
         return dB;
     }
 
-    public static IEnumerator FadeAudioSource(this AudioSource audioSource, float targetVolume, float fadeDuration, bool destroy = false, float delay = 0)
+    public static IEnumerator FadeAudioSource(this AudioSource audioSource, float targetVolume, float fadeDuration, bool destroy = false, float delay = 0, bool stopOnZero = true)
     {
         float startVolume = audioSource.volume;
         float timer = 0;
@@ -110,7 +110,8 @@ public static class UtilsFunctions
         if(delay != 0)
             yield return new WaitForSeconds(delay);
 
-        audioSource.Play();
+        if(!audioSource.isPlaying)
+            audioSource.Play();
 
         while (audioSource.volume != targetVolume && fadeDuration != 0)
         {
@@ -123,11 +124,16 @@ public static class UtilsFunctions
 
         audioSource.volume = targetVolume;
 
-        if (audioSource.volume <= 0)
+        if (audioSource.volume <= 0 && stopOnZero)
             audioSource.Stop();
 
         //you can remove this code that destroys the source
         if (destroy)
             GameObject.Destroy(audioSource);
+    }
+
+    public static T RandomElement<T>(this T[] array)
+    {
+        return array[Random.Range(0, array.Length)];
     }
 }

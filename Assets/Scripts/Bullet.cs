@@ -13,7 +13,7 @@ public class Bullet : MonoBehaviour
         this.speed = speed;
         rb = GetComponent<Rigidbody>();
         rb.velocity = direction * speed;
-        Invoke(nameof(InvokeDestroy), 10);
+        Invoke(nameof(InvokeDestroy), 5);
     }
 
     void InvokeDestroy()
