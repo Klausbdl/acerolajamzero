@@ -6,8 +6,13 @@ public class AudioLibrary : MonoBehaviour
     public AudioClip computerHumming;
 
     [Header("SFX")]
-    public AudioClip jump;
     public AudioClip transition;
+    public AudioClip[] footsteps;
+    public AudioClip[] whoosh;
+    public AudioClip[] hit;
+    public AudioClip[] hurt;
+    public AudioClip jump;
+    public AudioClip dash;
 
     [Header("UI")]
     public AudioClip mouseClick;
@@ -23,7 +28,4 @@ public class AudioLibrary : MonoBehaviour
     public AudioClip[] mainMenu;
     public AudioClip[] intermissionMenu;
     public AudioClip[] gameplay;
-
-    [Header("SFX")]
-    public AudioClip[] footsteps;
 }

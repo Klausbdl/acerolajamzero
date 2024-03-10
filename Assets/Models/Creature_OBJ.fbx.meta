@@ -100,14 +100,7 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events:
-      - time: 0
-        functionName: ResetCombo
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
+      events: []
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -137,6 +130,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.2033195
         functionName: AttackCollider
         data: 
@@ -144,8 +144,15 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.8335557
+      - time: 0.5090524
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -180,6 +187,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.13068181
         functionName: AttackCollider
         data: 
@@ -187,8 +201,15 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.8307147
+      - time: 0.5062114
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -264,8 +285,22 @@ ModelImporter:
         floatParameter: 0
         intParameter: 2
         messageOptions: 0
-      - time: 0.9210185
+      - time: 0.09762533
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 2
+        messageOptions: 0
+      - time: 0.5256992
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 2
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -300,6 +335,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0.023746701
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 1
+        messageOptions: 0
       - time: 0.30263376
         functionName: AttackCollider
         data: 
@@ -307,11 +349,18 @@ ModelImporter:
         floatParameter: 0
         intParameter: 1
         messageOptions: 0
-      - time: 0.74694437
+      - time: 0.5032514
         functionName: CanAttackAgain
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 1
+        intParameter: 1
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
         intParameter: 1
         messageOptions: 0
       transformMask: []
@@ -343,6 +392,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0.029023746
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 1
+        messageOptions: 0
       - time: 0.1979821
         functionName: AttackCollider
         data: 
@@ -350,11 +406,18 @@ ModelImporter:
         floatParameter: 0
         intParameter: 1
         messageOptions: 0
-      - time: 0.7470048
+      - time: 0.49477857
         functionName: CanAttackAgain
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 1
+        intParameter: 1
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
         intParameter: 1
         messageOptions: 0
       transformMask: []
@@ -386,6 +449,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.20738636
         functionName: AttackCollider
         data: 
@@ -393,8 +463,15 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.8307142
+      - time: 0.50289965
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -429,6 +506,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.13352273
         functionName: AttackCollider
         data: 
@@ -436,8 +520,15 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.8250657
+      - time: 0.50056237
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -479,8 +570,22 @@ ModelImporter:
         floatParameter: 0
         intParameter: 2
         messageOptions: 0
-      - time: 0.9162593
+      - time: 0.12137203
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 2
+        messageOptions: 0
+      - time: 0.50349325
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 2
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -515,6 +620,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0.03166227
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 1
+        messageOptions: 0
       - time: 0.31036803
         functionName: AttackCollider
         data: 
@@ -522,8 +634,15 @@ ModelImporter:
         floatParameter: 0
         intParameter: 1
         messageOptions: 0
-      - time: 0.74773383
+      - time: 0.49391684
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 1
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -558,6 +677,13 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
+      - time: 0.039577838
+        functionName: ProcessCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 1
+        messageOptions: 0
       - time: 0.20583732
         functionName: AttackCollider
         data: 
@@ -565,8 +691,15 @@ ModelImporter:
         floatParameter: 0
         intParameter: 1
         messageOptions: 0
-      - time: 0.7490141
+      - time: 0.4979982
         functionName: CanAttackAgain
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 1
+        messageOptions: 0
+      - time: 1
+        functionName: ResetCombo
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -601,13 +734,6 @@ ModelImporter:
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
       events:
-      - time: 0
-        functionName: ResetCombo
-        data: 
-        objectReferenceParameter: {instanceID: 0}
-        floatParameter: 0
-        intParameter: 0
-        messageOptions: 0
       - time: 0.061818726
         functionName: PlaySFX
         data: footstep

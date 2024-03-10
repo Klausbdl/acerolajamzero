@@ -1,4 +1,6 @@
+using Unity.Burst.CompilerServices;
 using UnityEngine;
+using UnityEngine.ProBuilder;
 
 public class PlayerController : MonoBehaviour
 {
@@ -43,8 +45,9 @@ public class PlayerController : MonoBehaviour
     bool canAttack = true;
     int currAttackSide = -1;
     int lastAttackSide = -1; //0: left, 1: right
-    public float attackDuration = .5f;
-    float attackTimer;
+    public float attackPushDuration = .5f;
+    float attackPushTimer;
+    float comboTimer;
     [Range(.01f, 1)] public float leftPunchValue;
     [Range(.01f, 1)] public float leftSwordValue;
     [Range(.01f, 1)] public float leftShootValue;
@@ -58,6 +61,8 @@ public class PlayerController : MonoBehaviour
     float rightPunchPercentage;
     float rightSwordPercentage;
     float rightShootPercentage;
+    int dominantLeft;
+    int dominantRight;
     public GameObject bulletPrefab;
     #endregion
     [Header("Attributes")]
@@ -79,6 +84,8 @@ public class PlayerController : MonoBehaviour
     public float[] armsFix = new float[2] { 10, -1};
     public float[] legsFix = new float[2] { 10, -1 };
     public float shootHeightOffset = 0;
+    public float slopeMapOffset = 0.5f;
+    public float groundedYVel = 5f;
 #if UNITY_EDITOR
     Vector3 debugPosition1;
     Vector3 debugPosition2;
@@ -126,11 +133,6 @@ public class PlayerController : MonoBehaviour
 
         if (!isPlaying) return;
 
-        #region ground check---------------------------------------------
-        isGrounded = Physics.CheckSphere(transform.position + new Vector3(0, .9f, 0), 1, groundMask);
-        animator.SetBool(groundedHash, isGrounded);
-        #endregion
-
         #region direction---------------------------------------------
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
@@ -151,32 +153,31 @@ public class PlayerController : MonoBehaviour
         bool attackedLeft = Input.GetButton("Fire1");
         bool attackedRight = Input.GetButton("Fire2");
 
-        //if attack
-        bool meleeAttack = attackedLeft ? leftShootPercentage < .33f : rightShootPercentage < .33f; //only push if not gun module
-        
-        if ((attackedLeft || attackedRight) && canAttack && isPlaying)
+        if ((attackedLeft || attackedRight) && isPlaying && canAttack)
         {
             canAttack = false;
-            
+            Debug.Log("attacking");
             currAttackSide = attackedLeft ? 0 : 1;
+            animator.SetBool(attackLeftHash, attackedLeft);
+            animator.SetBool(attackRightHash, attackedRight);
+
+            attackPushTimer = attackPushDuration;
+
+            float punchValue = attackedLeft ? leftPunchPercentage : rightPunchPercentage;
+            float swordValue = attackedLeft ? leftSwordPercentage : rightSwordPercentage;
+            float shootValue = attackedLeft ? leftShootPercentage : rightShootPercentage;
             
-            ProcessCombo();
+            lockRotation = shootValue >= punchValue && shootValue >= swordValue;
             
-            animator.SetFloat(leftAttackSpeedHash, leftAttackSpeed);
-            animator.SetFloat(rightAttackSpeedHash, rightAttackSpeed);
-            animator.SetTrigger(attackedLeft ? attackLeftHash : attackRightHash);
-            
-            attackTimer = attackDuration;
-            lockRotation = !meleeAttack;
             lastDir = Mathf.Abs(x) > .5f || Mathf.Abs(z) > .5f ? inputDir : transform.forward;
         }
 
-        if (attackTimer > 0)
+        if (attackPushTimer > 0)
         {
             if (!lockRotation)
             {
                 move = Mathf.Abs(x) > 0 || Mathf.Abs(z) > 0 ? lastDir : transform.forward;
-                move *= (attackTimer / attackDuration) + inputDir.normalized.magnitude;
+                move *= (attackPushTimer / attackPushDuration) + inputDir.normalized.magnitude;
 
                 if(move != Vector3.zero)
                     targetRotation = Quaternion.LookRotation(lastDir.normalized + inputDir.normalized * .1f);
@@ -187,18 +188,24 @@ public class PlayerController : MonoBehaviour
             if(aim)
                 targetRotation = Quaternion.LookRotation(camForward);
 
-            attackTimer -= Time.deltaTime;
+            attackPushTimer -= Time.deltaTime;
 
-            if (attackTimer <= 0)
+            if (attackPushTimer <= 0)
                 lockRotation = false;
         }
+
+        if(comboTimer > 0)
+            comboTimer -= Time.deltaTime;
         #endregion
 
         #region move body---------------------------------------------
 
         #region jump
         if (Input.GetButtonDown("Jump") && isGrounded)
+        {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * (gravity * gravityMultiplier));
+            AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.jump);
+        }
         #endregion
 
         #region roll
@@ -210,6 +217,8 @@ public class PlayerController : MonoBehaviour
             
             velocity.y = Mathf.Sqrt(jumpHeight * .2f * -2f * (gravity * gravityMultiplier));
             lastDir = inputDir != Vector3.zero ? inputDir : transform.forward;
+
+            AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.dash);
         }
 
         if (rollTimer > 0)
@@ -224,24 +233,46 @@ public class PlayerController : MonoBehaviour
         }
         #endregion
 
-        //speedMultiplier = Mathf.Lerp(speedMultiplier,
-        //    rolling ? 0.2f : (attackTimer > 0 && meleeAttack ? 0 : 1),
-        //    Time.deltaTime * (rolling ? 10 : 3));
+        #region ground check
+        Vector3 checkOffset = new Vector3(move.x, (-0.4f * move.magnitude) + 0.9f, move.z);
+        float slopeAngle;
+        if (Physics.Raycast(transform.position + checkOffset, -transform.up, out RaycastHit hit, Mathf.Infinity, groundMask))
+            slopeAngle = Vector3.Angle(hit.normal, Vector3.up);
+        else
+            slopeAngle = 0;
+
+        checkOffset.y -= UtilsFunctions.Map(0, 45, 0, slopeMapOffset, slopeAngle);
+
+        Vector3 checkCaps1 = transform.position + checkOffset;
+        checkCaps1.y = transform.position.y + .9f;
+        Vector3 checkCaps2 = transform.position + checkOffset;
+        isGrounded = Physics.CheckCapsule(checkCaps1, checkCaps2, 1, groundMask);
+        animator.SetBool(groundedHash, isGrounded);
+#if UNITY_EDITOR
+        debugPosition1 = checkCaps1;
+        debugPosition2 = checkCaps2;
+#endif
+        #endregion
+
 #if UNITY_EDITOR
         debugStringUpdate += $"\nx: {x} z: {z}";
         debugStringUpdate += $"\nroll timer: {rollTimer}";
         debugStringUpdate += $"\ninput: {inputDir}";
-        debugStringUpdate += $"\nmove: {move}";
+        debugStringUpdate += $"\nmove: {move} mag: {move.magnitude}";
+        debugStringUpdate += $"\nslope: {slopeAngle}";
         debugStringUpdate += $"\nlast dir: {lastDir}";
+        debugStringUpdate += $"\nattack timer: {attackPushTimer}";
+        debugStringUpdate += $"\ncan attack: {canAttack}";
 #endif
         controller.Move(move * speed * Time.deltaTime);
         
-        animator.SetFloat(speedHash, inputDir.magnitude);
+        animator.SetFloat(speedHash, move.normalized.magnitude);
+        animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), attackPushTimer > 0 && move.magnitude > 0 ? 1 : 0, Time.deltaTime * 5));
 
         #region apply gravity
         if (isGrounded && velocity.y < 0)
         {
-            velocity.y = -5f;
+            velocity.y = -groundedYVel;
         }
 
         velocity.y += (gravity * gravityMultiplier) * Time.deltaTime;
@@ -288,7 +319,8 @@ public class PlayerController : MonoBehaviour
                                  transform.up * followOffset.y +
                                  transform.forward * followOffset.z;
 
-        camAnchor.position = Vector3.Lerp(camAnchor.position, targetPosition, Time.deltaTime * (20 + speed * 2));
+        //camAnchor.position = Vector3.Lerp(camAnchor.position, targetPosition, Time.deltaTime * (20 + speed * 2));
+        camAnchor.position = targetPosition;
         
         if ((Input.GetAxis("Mouse X") != 0 || Input.GetAxis("Mouse Y") != 0) && isPlaying)
         {
@@ -300,19 +332,6 @@ public class PlayerController : MonoBehaviour
 
         xRot = Mathf.Clamp(xRot, -89f, 89f);
         camAnchor.rotation = Quaternion.Euler(xRot, yRot, 0);
-    }
-    void ProcessCombo()
-    {
-        animator.SetInteger(comboHash, combo);
-        if (combo == 1) combo = 2;
-        else if (combo == 2 || combo == 0) combo = 1;
-
-        if (lastAttackSide == -1) lastAttackSide = currAttackSide;
-        
-        if (currAttackSide != lastAttackSide)
-            combo = 1;
-        
-        lastAttackSide = currAttackSide;
     }
     public void UpdateModulePercentages()
     {
@@ -345,24 +364,79 @@ public class PlayerController : MonoBehaviour
         #endregion
 
         animator.SetFloat(speedMultiHash, speedMultiplier);
+        animator.SetFloat(leftAttackSpeedHash, leftAttackSpeed);
+        animator.SetFloat(rightAttackSpeedHash, rightAttackSpeed);
+
+        if (leftPunchValue > leftSwordValue && leftPunchValue > leftShootValue)
+            dominantLeft = 0;
+        else if (leftSwordValue > leftPunchValue && leftSwordValue > leftShootValue)
+            dominantLeft = 1;
+        else if (leftShootValue > leftPunchValue && leftShootValue > leftSwordValue)
+            dominantLeft = 2;
+
+        if (rightPunchValue > rightSwordValue && rightPunchValue > rightShootValue)
+            dominantRight = 0;
+        else if (rightSwordValue > rightPunchValue && rightSwordValue > rightShootValue)
+            dominantRight = 1;
+        else if (rightShootValue > rightPunchValue && rightShootValue > rightSwordValue)
+            dominantRight = 2;
+
     }
 
     //called from animation trigger
-    public void ResetCombo()
+    public void ProcessCombo(int i)
+    {
+        if (comboTimer > 0) return;
+
+        if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i)
+        {
+            Debug.Log("process combo: " + i);
+            NextCombo();
+        }
+    }
+    void NextCombo()
+    {
+        if (combo == 1) combo = 2;
+        else if (combo == 2 || combo == 0) combo = 1;
+        
+        animator.SetInteger(comboHash, combo);
+
+        if (lastAttackSide == -1) lastAttackSide = currAttackSide;
+
+        if (currAttackSide != lastAttackSide)
+            combo = 1;
+
+        comboTimer = .1f;
+
+        lastAttackSide = currAttackSide;
+
+        animator.SetBool(attackLeftHash, false);
+        animator.SetBool(attackRightHash, false);
+
+        AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.whoosh.RandomElement());
+    }
+    public void ResetCombo(int i)
+    {
+        if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i)
+        {
+            Debug.Log("reset combo: " + i);
+            ResetCombo();
+        }
+    }
+    void ResetCombo()
     {
         combo = 0;
         lastAttackSide = -1;
         currAttackSide = -1;
         canAttack = true;
+        animator.SetInteger(comboHash, combo);
     }
     public void CanAttackAgain(int i)
     {
-        bool left = currAttackSide == 0;
-        switch (i)
+        if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i)
         {
-            case 0: if((left ? leftPunchPercentage : rightPunchPercentage) >= 0.33f) canAttack = true; break;
-            case 1: if((left ? leftSwordPercentage : rightSwordPercentage) >= 0.33f) canAttack = true; break;
-            case 2: if((left ? leftShootPercentage : rightShootPercentage) >= 0.33f) canAttack = true; break;
+            Debug.Log("can attack again: " + i);
+            canAttack = true;
         }
     }
     public void AttackCollider(int type) {
@@ -451,10 +525,11 @@ public class PlayerController : MonoBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
+        Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(debugPosition1, 1);
+        Gizmos.color = isGrounded ? Color.green : Color.red;
         Gizmos.DrawWireSphere(debugPosition2, 1);
-        Gizmos.DrawLine(debugPosition1, debugPosition2);
-        Gizmos.color = Color.red;
+        Gizmos.color = Color.yellow;
         if (camAnchor)
         {
             Vector3 point1 = bones[1].position;

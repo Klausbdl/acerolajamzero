@@ -6630,11 +6630,11 @@ MonoBehaviour:
     noise: 50
     noiseSpeed: 1
     center: {x: 0, y: 0}
-    pos: {x: 7.2166033, y: -6.4598436}
+    pos: {x: 15.457488, y: -0.23172516}
     moveSpeed: {x: 0, y: 1}
     moveMagnitude: {x: 0, y: 30}
     startRot: 0
-    rotation: 228.16711
+    rotation: 89.14114
     rotSpeed: 6
     originalRadius: 309.3
     radius: 309.3
@@ -6648,11 +6648,11 @@ MonoBehaviour:
     noise: 100
     noiseSpeed: 1
     center: {x: 0, y: 0}
-    pos: {x: 14.236159, y: -19.871733}
+    pos: {x: 31.871693, y: -15.244116}
     moveSpeed: {x: 1, y: 2}
     moveMagnitude: {x: 0, y: 40}
     startRot: 0
-    rotation: 215.61792
+    rotation: 64.438385
     rotSpeed: 5.67
     originalRadius: 147.3
     radius: 147.3
@@ -6666,11 +6666,11 @@ MonoBehaviour:
     noise: 100
     noiseSpeed: 1
     center: {x: 0, y: 0}
-    pos: {x: -17.171356, y: -7.9792695}
+    pos: {x: 28.995941, y: -1.362924}
     moveSpeed: {x: 1, y: 1.5}
     moveMagnitude: {x: 0, y: 40}
     startRot: 120
-    rotation: 474.92358
+    rotation: 447.30887
     rotSpeed: 18.8
     originalRadius: 171.2
     radius: 171.2
@@ -6684,11 +6684,11 @@ MonoBehaviour:
     noise: 100
     noiseSpeed: 1
     center: {x: 0, y: 0}
-    pos: {x: -12.728389, y: 2.1816416}
+    pos: {x: -19.551239, y: 6.528091}
     moveSpeed: {x: 1, y: 1}
     moveMagnitude: {x: 0, y: 40}
     startRot: 240
-    rotation: 440.27402
+    rotation: 251.53601
     rotSpeed: 24.2
     originalRadius: 143.9
     radius: 143.9
@@ -17563,8 +17563,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computerHumming: {fileID: 8300000, guid: 0a472998753102643b3a32691f3aa024, type: 3}
-  jump: {fileID: 0}
   transition: {fileID: 8300000, guid: 3607c082d34bfb44c9357d3160d32307, type: 3}
+  footsteps:
+  - {fileID: 8300000, guid: 39499e58f9b04174e898e03224044a0a, type: 3}
+  - {fileID: 8300000, guid: 1b6eb56e6b897634891f21d0835dc60c, type: 3}
+  - {fileID: 8300000, guid: 5a060439f827ee744bf7d7a8252ff57c, type: 3}
+  - {fileID: 8300000, guid: 6d82e42a22a9f6842ba0e44e619c0aa5, type: 3}
+  - {fileID: 8300000, guid: e49c3ea99a48a714f967c77c4d35513c, type: 3}
+  whoosh:
+  - {fileID: 8300000, guid: bf17d6458875c2549b04ad98d83cabd5, type: 3}
+  - {fileID: 8300000, guid: 7187001d080e84343b15cd5e39aacc89, type: 3}
+  - {fileID: 8300000, guid: 24045ac3e459b9246bda3c5fbeb1a799, type: 3}
+  - {fileID: 8300000, guid: 2bb6ce4cfa2649440beac7371c3bbc72, type: 3}
+  - {fileID: 8300000, guid: bace5a693de20e14c8519b79283e4368, type: 3}
+  - {fileID: 8300000, guid: 660bee711c6914a4984d315d69550d22, type: 3}
+  - {fileID: 8300000, guid: ae508148a10eb5e4ca295c83e8b9e381, type: 3}
+  - {fileID: 8300000, guid: a83593bcdc9929a408f37596843b8c26, type: 3}
+  hit: []
+  hurt: []
+  jump: {fileID: 8300000, guid: fb7484cb5abca104bac29ab8a017099a, type: 3}
+  dash: {fileID: 8300000, guid: 584635780d53c474fbe654247ef8fae4, type: 3}
   mouseClick: {fileID: 8300000, guid: f75a3646c4bc14948bbc84501d8da1d3, type: 3}
   buttonClick: {fileID: 8300000, guid: 8044af3f150c5fe46b49c12bb0baad72, type: 3}
   buttonBackClick: {fileID: 8300000, guid: 624a3924139ce5c4cb07b4500e4e7f0b, type: 3}
@@ -17582,12 +17600,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 4e0c1997954fd2844951425a6576a377, type: 3}
   - {fileID: 8300000, guid: c1ad6bfc6dc8ae54ab8afca572dcdd67, type: 3}
   - {fileID: 8300000, guid: 2bf3dbfa4f0af0044b4a1d18c02793c5, type: 3}
-  footsteps:
-  - {fileID: 8300000, guid: 39499e58f9b04174e898e03224044a0a, type: 3}
-  - {fileID: 8300000, guid: 1b6eb56e6b897634891f21d0835dc60c, type: 3}
-  - {fileID: 8300000, guid: 5a060439f827ee744bf7d7a8252ff57c, type: 3}
-  - {fileID: 8300000, guid: 6d82e42a22a9f6842ba0e44e619c0aa5, type: 3}
-  - {fileID: 8300000, guid: e49c3ea99a48a714f967c77c4d35513c, type: 3}
 --- !u!1 &798523492
 GameObject:
   m_ObjectHideFlags: 0
@@ -45409,7 +45421,7 @@ MonoBehaviour:
     moveSpeed: {x: 0, y: 0}
     moveMagnitude: {x: 0, y: 0}
     startRot: 0
-    rotation: -244.64282
+    rotation: -110.224
     rotSpeed: -15.9
     originalRadius: 0
     radius: 126.26001
@@ -45427,10 +45439,10 @@ MonoBehaviour:
     moveSpeed: {x: 0, y: 0}
     moveMagnitude: {x: 0, y: 0}
     startRot: 0
-    rotation: -244.64282
+    rotation: -110.224
     rotSpeed: -15.9
     originalRadius: 37.38
-    radius: 20.032024
+    radius: 19.627056
     radiusSpeed: 1.37
     radiusMagnitude: 6.1
     radiusAdd: 4.6
@@ -45445,10 +45457,10 @@ MonoBehaviour:
     moveSpeed: {x: 0, y: 0}
     moveMagnitude: {x: 0, y: 0}
     startRot: 72
-    rotation: -172.64282
+    rotation: -38.224003
     rotSpeed: -15.9
     originalRadius: 46.75
-    radius: 19.020931
+    radius: 27.670694
     radiusSpeed: 3.29
     radiusMagnitude: 5.89
     radiusAdd: 3.2
@@ -45463,10 +45475,10 @@ MonoBehaviour:
     moveSpeed: {x: 0, y: 0}
     moveMagnitude: {x: 0, y: 0}
     startRot: 144
-    rotation: -100.642815
+    rotation: 33.775997
     rotSpeed: -15.9
     originalRadius: 52.88
-    radius: 26.117485
+    radius: 24.47314
     radiusSpeed: 1.89
     radiusMagnitude: 3.41
     radiusAdd: -0.2
@@ -45481,10 +45493,10 @@ MonoBehaviour:
     moveSpeed: {x: 0, y: 0}
     moveMagnitude: {x: 0, y: 0}
     startRot: 216
-    rotation: -28.642818
+    rotation: 105.776
     rotSpeed: -15.9
     originalRadius: 51.1
-    radius: 30.70449
+    radius: 24.727028
     radiusSpeed: 2
     radiusMagnitude: 4
     radiusAdd: 5
@@ -45499,10 +45511,10 @@ MonoBehaviour:
     moveSpeed: {x: 0, y: 0}
     moveMagnitude: {x: 0, y: 0}
     startRot: 288
-    rotation: 43.35718
+    rotation: 177.776
     rotSpeed: -15.9
     originalRadius: 49.1
-    radius: 25.748138
+    radius: 24.00018
     radiusSpeed: 2.4
     radiusMagnitude: 4.45
     radiusAdd: 5.2

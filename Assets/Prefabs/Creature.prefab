@@ -447,6 +447,7 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 64
+  speedMultiplier: 1
   isGrounded: 0
   gravity: -9.8
   gravityMultiplier: 2
@@ -454,7 +455,7 @@ MonoBehaviour:
   hitableMask:
     serializedVersion: 2
     m_Bits: 128
-  attackDuration: 0.5
+  attackPushDuration: 0.5
   leftPunchValue: 1
   leftSwordValue: 0
   leftShootValue: 0
@@ -483,6 +484,8 @@ MonoBehaviour:
   - 2
   - -0.13
   shootHeightOffset: 0.25
+  slopeMapOffset: 2.6
+  groundedYVel: 10
 --- !u!143 &4645079175741726156
 CharacterController:
   m_ObjectHideFlags: 0
