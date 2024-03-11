@@ -131,7 +131,7 @@ public class UICircleRenderer : Graphic
 }
 
 [Serializable]
-public class MyCircle
+public class MyCircle : ICloneable
 {
     [Header("Main")]
     public Color color = new Color(1, 1, 1, 1);
@@ -192,5 +192,10 @@ public class MyCircle
     public override string ToString()
     {
         return $"\npos: {pos} rot: {rotation} radius: {radius}";
+    }
+
+    public object Clone()
+    {
+        return MemberwiseClone();
     }
 }

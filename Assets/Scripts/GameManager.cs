@@ -47,6 +47,10 @@ public class GameManager : Singleton<GameManager>
     public bool inRun;
     private float runTime = 0f;
     public Inventory shopInventory;
+    public int currentLevel = 0;
+    public List<Enemy> enemiesAlive = new List<Enemy>();
+    public List<Enemy> enemiesDead = new List<Enemy>();
+    public int oolCollected;
 
     //debug
     public string debugString = "";
@@ -241,7 +245,7 @@ public class GameManager : Singleton<GameManager>
             
             PlayerPrefs.SetInt("Last Slot", slot);
             uiManager.lastSlotText.text = $"Save Slot {PlayerPrefs.GetInt("Last Slot")}";
-            currentSave = saves[slot];
+            currentSave = saves.FirstOrDefault(s => s.saveId == slot);
         }
 
         //TODO: DEBUG
@@ -305,30 +309,46 @@ public class GameManager : Singleton<GameManager>
         AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[2], AudioManager.AudioType.MUSIC, 1, true, 3, 1);
     }
 
-    public void UpdatePlayerVariables()
+    /// <summary>
+    /// 0: max hp | 1: def | 2: speed | 3: left dmg 
+    /// 4: right dmg | 5: left speed | 6: right speed
+    /// 7: jump | 8: left kbk | 9: right kbk
+    /// </summary>
+    /// <returns></returns>
+    public string UpdatePlayerVariables()
     {
+        string returnString = "";
         //vitality
         playerController.maxHp = PlayerAttributes.GetMaxHp();
         playerController.curHp = playerController.maxHp;
+        returnString += playerController.maxHp.ToString() + "_"; //0
         //defense
         playerController.defense = UtilsFunctions.Map(0, 100, 0, .5f, PlayerAttributes.defense);
+        returnString += ((int)(playerController.defense * 10)).ToString() + "_"; //1
         //agility
-        playerController.speed = UtilsFunctions.Map(0, 100, 10, 40, PlayerAttributes.agility); //TODO: 20 wip
+        playerController.speed = UtilsFunctions.Map(0, 100, 10, 40, PlayerAttributes.agility) * currentSave.equippedLegModule.speed;
         playerController.speedMultiplier = UtilsFunctions.Map(0, 100, 1, 2, PlayerAttributes.agility);
+        returnString += playerController.speed.ToString("0.00") + "_"; //2
         //strength
         float damageMultiplier = UtilsFunctions.Map(0, 100, 1, 10, PlayerAttributes.strength);
         playerController.leftDamage = currentSave.GetArmDamage(0) * damageMultiplier;
+        returnString += playerController.leftDamage.ToString("0.00") + "_"; //3
         playerController.rightDamage = currentSave.GetArmDamage(1) * damageMultiplier;
+        returnString += playerController.rightDamage.ToString("0.00") + "_"; //4
         //dex
         float dexMultiplier = UtilsFunctions.Map(0, 100, 1, 2, PlayerAttributes.dexterity);
         playerController.leftAttackSpeed = currentSave.GetArmSpeed(0) * dexMultiplier;
+        returnString += playerController.leftAttackSpeed.ToString("0.00") + "_"; //5
         playerController.rightAttackSpeed = currentSave.GetArmSpeed(1) * dexMultiplier;
+        returnString += playerController.rightAttackSpeed.ToString("0.00") + "_"; //6
         //jump
-        playerController.jumpHeight = UtilsFunctions.Map(0, 100, 4f, 10f, PlayerAttributes.jump);
-
+        playerController.jumpHeight = UtilsFunctions.Map(0, 100, 4f, 10f, PlayerAttributes.jump) * currentSave.equippedLegModule.jump;
+        returnString += playerController.jumpHeight.ToString("0.00") + "_"; //7
         //knockback
         playerController.leftKnockback = currentSave.GetArmKnockback(0);
+        returnString += playerController.leftKnockback.ToString("0.00") + "_"; //8
         playerController.rightKnockback = currentSave.GetArmKnockback(1);
+        returnString += playerController.rightKnockback.ToString("0.00") + "_"; //9
 
         //animator variables
         playerController.leftPunchValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.PUNCH, 0);
@@ -339,6 +359,7 @@ public class GameManager : Singleton<GameManager>
         playerController.rightShootValue = currentSave.GetAnimatorValue(ArmModule.ArmModuleType.GUN, 1);
 
         playerController.UpdateModulePercentages();
+        return returnString;
     }
 
     #region save system
@@ -397,7 +418,7 @@ public class GameManager : Singleton<GameManager>
                 }
             }
 
-            if(PlayerPrefs.GetInt("Last Slot") > saves.Count - 1)
+            if(!saves.Any(s => s.saveId == PlayerPrefs.GetInt("Last Slot")))
             {
                 uiManager.continueButton.interactable = false;
                 PlayerPrefs.DeleteKey("Last Slot");
@@ -438,6 +459,9 @@ public class GameManager : Singleton<GameManager>
             uiManager.lastSlotText.text = "";
             PlayerPrefs.DeleteKey("Last Slot");
         }
+
+        if(saves.Count == 0)
+            uiManager.loadButton.interactable = false;
     }
     #endregion
     //-------------------------------------------------------------------------- inside run
@@ -451,19 +475,32 @@ public class GameManager : Singleton<GameManager>
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        Debug.Log("Loading level 0");
-        levels[0].SetActive(true);
-        yield return new WaitForEndOfFrame();
-        levels[0].GetComponentInChildren<ReflectionProbe>().RenderProbe();
+        //music
+        foreach (var m in audioLibrary.mainMenu)
+            audioManager.StopAudio(m, 2, false, 0);
 
+        foreach (var m in audioLibrary.gameplay)
+            audioManager.PlayAudio(m, AudioManager.AudioType.MUSIC, 2, true, 3);
+
+        Debug.Log($"Loading level {currentLevel}");
+        #region level
+        levels[currentLevel].SetActive(true);
+        yield return new WaitForEndOfFrame();
+        levels[currentLevel].GetComponentInChildren<ReflectionProbe>().RenderProbe();
+
+        enemiesAlive = levels[currentLevel].GetComponentsInChildren<Enemy>().ToList();
+        enemiesDead.Clear();
+        uiManager.enemyCounterText.text = enemiesAlive.Count.ToString();
+        #endregion
+        
         yield return new WaitForSeconds(3);
         Debug.Log("Setting up player");
-        
+        #region player setup
         playerController.controller.enabled = false;
         
         yield return new WaitForEndOfFrame();
         
-        playerController.transform.position = startPoints[0].position;
+        playerController.transform.position = startPoints[currentLevel].position;
         playerController.camAnchor.position = playerController.transform.position;
         playerController.maxZoom = 10;
         playerController.followOffset = new Vector3(0, 3, 0);
@@ -474,25 +511,40 @@ public class GameManager : Singleton<GameManager>
         playerController.controller.enabled = true;
         playerController.isPlaying = true;
         UpdatePlayerVariables();
+        #endregion
 
         inRun = true;
         runTime = 0;
 
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(1.5f);
 
         int hp = 0;
         int maxHp = currentSave.attributes.GetMaxHp();
-        int ammountToAdd = (int)(0.004f * maxHp + 1.2f);
-        while (hp <= maxHp)
+        //int ammountToAdd = (int)(0.004f * maxHp + 1.2f);
+        int ammountToAdd = (int)(0.001f * maxHp);
+        while (hp < maxHp)
         {
+            if (hp + ammountToAdd > maxHp)
+                break;
+
             hp += ammountToAdd;
-            hp = Mathf.Clamp(hp, 0, maxHp);
             uiManager.UpdateHpCircles(hp);
+
+            if (hp % 100 == 0)
+            {
+                AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.healthUp);
+            }
+
             yield return new WaitForEndOfFrame();
         }
-
+        
+        hp = maxHp;
+        uiManager.UpdateHpCircles(hp);
+        AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.healthUp);
+        
         Debug.Log("End Start Run Coroutine");
     }
+
     public void PauseRun()
     {
         Debug.Log("pause");
@@ -512,6 +564,13 @@ public class GameManager : Singleton<GameManager>
         Cursor.lockState = CursorLockMode.Locked;
         playerController.isPlaying = true;
         Time.timeScale = 1;
+    }
+
+    public void KillEnemy(Enemy enemy)
+    {
+        enemiesAlive.Remove(enemy);
+        enemiesDead.Add(enemy);
+        uiManager.enemyCounterText.text = enemiesAlive.Count.ToString();
     }
     //-------------------------------------------------------------------------- animation triggers
     public void ChangeSky(string sky)

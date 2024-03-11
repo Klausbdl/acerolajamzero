@@ -13,6 +13,7 @@ public class LegsData : MonoBehaviour
     public Transform foot;
     public Transform hover;
     public Transform piston;
+    public int[] prices;
 
     [Header("Debug")]
     public float valuesRange = 20;
@@ -41,6 +42,7 @@ public class LegsData : MonoBehaviour
                 module.moduleType = (LegModule.LegModuleType)i-1;
                 module.speed = spd;
                 module.jump = jump;
+                module.cost = prices[i-1];
 
                 manager.shopInventory.legModules.Add(module);
             }

@@ -32,6 +32,6 @@ public class SaveSlotButton : MonoBehaviour
     public void DeleteSave()
     {
         GameManager.Instance.DeleteSave(id);
-        AudioManager.Instance.PlayPlayPress();
+        AudioManager.Instance.PlayButtonBackPress();
     }
 }

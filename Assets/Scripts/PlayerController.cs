@@ -45,7 +45,7 @@ public class PlayerController : MonoBehaviour
     bool canAttack = true;
     int currAttackSide = -1;
     int lastAttackSide = -1; //0: left, 1: right
-    public float attackPushDuration = .5f;
+    public float attackPushDuration = .4f;
     float attackPushTimer;
     float comboTimer;
     [Range(.01f, 1)] public float leftPunchValue;
@@ -64,6 +64,7 @@ public class PlayerController : MonoBehaviour
     int dominantLeft;
     int dominantRight;
     public GameObject bulletPrefab;
+    Vector3 enemyDirection;
     #endregion
     [Header("Attributes")]
     public int maxHp;
@@ -156,7 +157,6 @@ public class PlayerController : MonoBehaviour
         if ((attackedLeft || attackedRight) && isPlaying && canAttack)
         {
             canAttack = false;
-            Debug.Log("attacking");
             currAttackSide = attackedLeft ? 0 : 1;
             animator.SetBool(attackLeftHash, attackedLeft);
             animator.SetBool(attackRightHash, attackedRight);
@@ -170,6 +170,8 @@ public class PlayerController : MonoBehaviour
             lockRotation = shootValue >= punchValue && shootValue >= swordValue;
             
             lastDir = Mathf.Abs(x) > .5f || Mathf.Abs(z) > .5f ? inputDir : transform.forward;
+            if (enemyDirection != Vector3.zero)
+                lastDir = enemyDirection;
         }
 
         if (attackPushTimer > 0)
@@ -177,7 +179,7 @@ public class PlayerController : MonoBehaviour
             if (!lockRotation)
             {
                 move = Mathf.Abs(x) > 0 || Mathf.Abs(z) > 0 ? lastDir : transform.forward;
-                move *= (attackPushTimer / attackPushDuration) + inputDir.normalized.magnitude;
+                move *= (attackPushTimer / attackPushDuration) + inputDir.normalized.magnitude * .1f;
 
                 if(move != Vector3.zero)
                     targetRotation = Quaternion.LookRotation(lastDir.normalized + inputDir.normalized * .1f);
@@ -390,7 +392,6 @@ public class PlayerController : MonoBehaviour
 
         if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i)
         {
-            Debug.Log("process combo: " + i);
             NextCombo();
         }
     }
@@ -419,25 +420,28 @@ public class PlayerController : MonoBehaviour
     {
         if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i)
         {
-            Debug.Log("reset combo: " + i);
             ResetCombo();
         }
     }
-    void ResetCombo()
+    public void ResetCombo()
     {
         combo = 0;
         lastAttackSide = -1;
         currAttackSide = -1;
         canAttack = true;
         animator.SetInteger(comboHash, combo);
+        enemyDirection = Vector3.zero;
     }
     public void CanAttackAgain(int i)
     {
         if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i)
         {
-            Debug.Log("can attack again: " + i);
             canAttack = true;
         }
+    }
+    public void CanAttackAgain()
+    {
+        canAttack = true;
     }
     public void AttackCollider(int type) {
         //args: attackType        
@@ -487,11 +491,11 @@ public class PlayerController : MonoBehaviour
             default:
             case 0:
                 armDistance = 3;
-                radius = .7f;
+                radius = 2f;
                 break;
             case 1:
                 armDistance = 4;
-                radius = 1.3f;
+                radius = 1.8f;
                 break;
             case 2:
                 break;
@@ -501,16 +505,32 @@ public class PlayerController : MonoBehaviour
         {
             RaycastHit[] results = new RaycastHit[10];
 
-            Vector3 p1 = boneToUse.position + (currAttackSide == 0 ? -boneToUse.right : boneToUse.right);
-            Vector3 p2 = p1 + (boneToUse.up * armDistance);
+            //Vector3 p1 = boneToUse.position + (currAttackSide == 0 ? -boneToUse.right : boneToUse.right);
+            //Vector3 p2 = p1 + (boneToUse.up * armDistance);
+            Vector3 p1 = transform.position + new Vector3(0, 2, 0);
+            Vector3 p2 = p1 + (transform.forward * armDistance);
 
             int hitCount = Physics.CapsuleCastNonAlloc(p1, p2, radius, boneToUse.up, results, Vector3.Distance(p1, p2), hitableMask);
 
             if (hitCount > 0)
+            {
                 for (int j = 0; j < results.Length; j++)
+                {
                     if (results[j].collider != null)
+                    {
                         if (results[j].collider.TryGetComponent(out IDamagable hitable))
+                        {
                             hitable.Damage(damage, explosionForce * knockback, explosionUpward);
+                            enemyDirection = (results[j].transform.position - transform.position).normalized;
+                            enemyDirection.y = 0;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                enemyDirection = Vector3.zero;
+            }
         }
         else //shoot stuff
         {

@@ -13,6 +13,8 @@ public class AudioLibrary : MonoBehaviour
     public AudioClip[] hurt;
     public AudioClip jump;
     public AudioClip dash;
+    public AudioClip healthUp;
+    public AudioClip enemyDie;
 
     [Header("UI")]
     public AudioClip mouseClick;
@@ -23,6 +25,7 @@ public class AudioLibrary : MonoBehaviour
     public AudioClip equipModule;
     public AudioClip unequipModule;
     public AudioClip buyModule;
+    public AudioClip menuAppear;
 
     [Header("Music")]
     public AudioClip[] mainMenu;

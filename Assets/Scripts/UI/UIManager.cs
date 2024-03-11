@@ -66,7 +66,9 @@ public class UIManager : MonoBehaviour
     }
     int ArmModuleCost
     {
-        get { return currentArmModule.cost + (currentArmModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f)); }
+        get {
+            int count = GameManager.Instance.currentSave.playerInventory.leftArmModules.Count + GameManager.Instance.currentSave.playerInventory.rightArmModules.Count;
+            return currentArmModule.cost + (int)(currentArmModule.cost * (count / 22f)); }
     }
     //leg shop
     [Space(8)]
@@ -75,7 +77,9 @@ public class UIManager : MonoBehaviour
     ItemModule currentLegModule;
     int LegModuleCost
     {
-        get { return currentLegModule.cost + (currentLegModule.cost * (int)(GameManager.Instance.PlayerAttributes.Level / 50f)); }
+        get {
+            int count = GameManager.Instance.currentSave.playerInventory.legModules.Count;
+            return currentLegModule.cost + (int)(currentLegModule.cost * (count / 6f)); }
     }
     #endregion
     [Header("Inventory Menu")]
@@ -99,13 +103,19 @@ public class UIManager : MonoBehaviour
     public List<Toggle> leftArmToggles = new List<Toggle>();
     public List<Toggle> rightArmToggles = new List<Toggle>();
     public List<Toggle> legsToggles = new List<Toggle>();
+    public TextMeshProUGUI leftInfo;
+    public TextMeshProUGUI rightInfo;
+    public TextMeshProUGUI legsInfo;
     #endregion
     [Header("HUD")]
     #region hud
     public UICircleRenderer hpCirclesRenderer;
     public TextMeshProUGUI currencyText;
     public TextMeshProUGUI timerText;
+    public TextMeshProUGUI enemyCounterText;
     #endregion
+    [Header("Pause")]
+    public TextMeshProUGUI leaveRunMessageText;
 
     float blendDuration = 0.15f;
 
@@ -686,7 +696,11 @@ public class UIManager : MonoBehaviour
             GameManager.Instance.playerController.bodyParts[3]
         };
         int blendShapeIndex = (int)module.moduleType - 1;
-        StartCoroutine(DeformLeg(renderers, blendShapeIndex));      
+        StartCoroutine(DeformLeg(renderers, blendShapeIndex));
+
+        string updatedVariables = GameManager.Instance.UpdatePlayerVariables();
+        string[] variables = updatedVariables.Split('_');
+        legsInfo.text = $"Speed: {variables[2]}\nJump: {variables[7]}";
     }
     IEnumerator DeformLeg(List<SkinnedMeshRenderer> renderers, int blendShapeIndex)
     {
@@ -821,6 +835,11 @@ public class UIManager : MonoBehaviour
                 rightArmSlotCounterText.text = $"Available: {GameManager.Instance.currentSave.GetAvailableSlots(side)}";
             }
         }
+
+        string updatedVariables = GameManager.Instance.UpdatePlayerVariables();
+        string[] variables = updatedVariables.Split('_');
+        leftInfo.text = $"Damage: {variables[3]}\nKnockback: {variables[8]}\nSpeed: {variables[5]}";
+        rightInfo.text = $"Damage: {variables[4]}\nKnockback: {variables[9]}\nSpeed: {variables[6]}";
     }
     IEnumerator DeformArm(SkinnedMeshRenderer renderer, int blendShapeIndex, bool on)
     {
@@ -876,10 +895,23 @@ public class UIManager : MonoBehaviour
                 c.noiseSpeed = 1 + (1 - remainder / 100f);
             }
 
+            c.color = Color.black;
             hpCirclesRenderer.circles.Add(c);
+            MyCircle c2 = c.Clone() as MyCircle;
+            c2.color = Color.white;
+            c2.center.x -= 4;
+            c2.center.y += 4;
+            hpCirclesRenderer.circles.Add(c2);
         }
 
         hpCirclesRenderer.SetAllDirty();
+    }
+    #endregion
+
+    #region pause
+    public void OnEndRunClick()
+    {
+        leaveRunMessageText.text = $"End run and leave with 50% of OOL?\n{GameManager.Instance.oolCollected / 2}";
     }
     #endregion
 }

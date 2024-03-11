@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 [Serializable]
@@ -47,8 +48,12 @@ public class PlayerSave
         float k = 0;
         switch (side)
         {
-            case 0: equippedLeftArmModules.ForEach(x => k += x.knockback); break;
-            case 1: equippedRightArmModules.ForEach(x => k += x.knockback); break;
+            case 0: equippedLeftArmModules.ForEach(x => k += x.knockback);
+                k /= equippedLeftArmModules.Count;
+                break;
+            case 1: equippedRightArmModules.ForEach(x => k += x.knockback);
+                k /= equippedRightArmModules.Count;
+                break;
         }
         return k;
     }

@@ -1,7 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
-using Unity.Burst.Intrinsics;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -9,16 +6,21 @@ public class Enemy : MonoBehaviour, IDamagable
 {
     NavMeshAgent agent;
     Rigidbody rb;
+    public float maxHp = 5;
     public float hp;
     public float speed;
-    
+    public LayerMask groundLayer;
+    Vector3 originalPos;
+
     bool canBeHit = true;
     public float recoverDuration = 3;
     public float recoverTimer;
 
-    //TODO: timer of being immune from getting stunned?
+    public GameObject hitParticle;
+    public GameObject dieParticle;
 
-    public LayerMask groundLayer;
+    [SerializeField] private Shader shader;
+    Material[] materials;
 
 #if UNITY_EDITOR
     string debugString;
@@ -30,6 +32,34 @@ public class Enemy : MonoBehaviour, IDamagable
         agent.speed = speed;
         rb = GetComponent<Rigidbody>();
         gameObject.layer = 7;
+        hp = maxHp;
+        originalPos = transform.position;
+        //materials
+        materials = GetComponentInChildren<MeshRenderer>().materials;
+
+        foreach (Material mat in materials)
+        {
+            if (mat.shader == shader)
+            {
+                mat.SetFloat("_Hurt_Strength", 0);
+                mat.SetFloat("_Hurt_Noise_Speed", 0);
+            }
+        }
+    }
+
+    void ResetEnemey()
+    {
+        hp = maxHp;
+        transform.position = originalPos;
+
+        foreach (Material mat in materials)
+        {
+            if (mat.shader == shader)
+            {
+                mat.SetFloat("_Hurt_Strength", 0);
+                mat.SetFloat("_Hurt_Noise_Speed", 0);
+            }
+        }
     }
 
     void Update()
@@ -42,24 +72,41 @@ public class Enemy : MonoBehaviour, IDamagable
     {
         hp -= damage;
 
-        if (hp < 0)
+        Instantiate(hitParticle, transform.position + new Vector3(0, 1.17f, 0), Quaternion.identity);
+
+        foreach (Material mat in materials)
         {
-            Destroy(gameObject);
+            if (mat.shader == shader)
+            {
+                mat.SetFloat("_Hurt_Strength", Mathf.Lerp(0, 0.6f, 1 - hp / maxHp));
+                mat.SetFloat("_Hurt_Noise_Speed", Mathf.Lerp(0, 0.1f, 1 - hp / maxHp));
+            }
+        }
+
+        if (hp <= 0)
+        {
+            GameManager.Instance.KillEnemy(this);
+            gameObject.SetActive(false);
+            Instantiate(dieParticle, transform.position, Quaternion.identity);
+            AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.enemyDie);
+            return;
         }
 
         recoverTimer += .1f;
 
         if (canBeHit)
-            StartCoroutine(TakeDamage(damage));
+            StartCoroutine(TakeDamage(damage, force, upward));
 
         Vector3 impulseForce = (transform.position - GameManager.Instance.playerController.transform.position).normalized;
-        impulseForce *= force;
-        impulseForce.y = upward;
+        impulseForce *= force * .25f;
+        impulseForce.y = upward * .8f;
 
         rb.AddForce(impulseForce, ForceMode.Impulse);
+
+        AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.hit.RandomElement());
     }
 
-    IEnumerator TakeDamage(float damage)
+    IEnumerator TakeDamage(float damage, float force, float upward)
     {
         canBeHit = false;
 
@@ -73,6 +120,14 @@ public class Enemy : MonoBehaviour, IDamagable
         recoverTimer = recoverDuration;
 
         rb.isKinematic = false;
+
+        yield return new WaitForEndOfFrame();
+
+        Vector3 impulseForce = (transform.position - GameManager.Instance.playerController.transform.position).normalized;
+        impulseForce *= force;
+        impulseForce.y = upward;
+
+        rb.AddForce(impulseForce, ForceMode.Impulse);
 
         while (true)
         {

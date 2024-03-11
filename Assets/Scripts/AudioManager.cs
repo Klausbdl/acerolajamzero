@@ -19,10 +19,6 @@ public class AudioManager : Singleton<AudioManager>
     public override void Awake()
     {
         base.Awake();
-        oneShotMusic = sourceObject.AddComponent<AudioSource>();
-        oneShotMusic.outputAudioMixerGroup = mixers[0];
-        oneShotFx = sourceObject.AddComponent<AudioSource>();
-        oneShotFx.outputAudioMixerGroup = mixers[1];
     }
 
     public void PlayAudio(AudioClip clip, AudioType type, float fadeDuration, bool loop = true, float delay = 0, float volume = 1, bool stopOnZero = false)
@@ -48,13 +44,13 @@ public class AudioManager : Singleton<AudioManager>
         sources.Add(newMusic);
     }
 
-    public void StopAudio(AudioClip clip, float fadeDuration, float delay = 0)
+    public void StopAudio(AudioClip clip, float fadeDuration, bool destroy = true, float delay = 0, bool stopOnZero = true)
     {
         foreach(var s in sources)
         {
             if (s.clip == clip)
             {
-                StartCoroutine(s.FadeAudioSource(0, fadeDuration, true, delay));
+                StartCoroutine(s.FadeAudioSource(0, fadeDuration, destroy, delay, stopOnZero));
                 sources.Remove(s);
                 return;
             }
@@ -71,4 +67,5 @@ public class AudioManager : Singleton<AudioManager>
     public void PlayBuyModule() => oneShotFx.PlayOneShot(library.buyModule);
     public void PlayEquipModule() => oneShotFx.PlayOneShot(library.equipModule);
     public void PlayUnequipModule() => oneShotFx.PlayOneShot(library.unequipModule, 2.5f);
+    public void PlayMenuAppear() => oneShotFx.PlayOneShot(library.menuAppear);
 }

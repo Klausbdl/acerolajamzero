@@ -16,7 +16,7 @@ AvatarMask:
   - m_Path: Armature/Root
     m_Weight: 0
   - m_Path: Armature/Root/body
-    m_Weight: 1
+    m_Weight: 0
   - m_Path: Armature/Root/body/eyes
     m_Weight: 0
   - m_Path: Armature/Root/body/l.arm

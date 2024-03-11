@@ -22,7 +22,7 @@ public class WeaponsData : MonoBehaviour
     public Transform rifle;
     public Transform laser;
     public Transform mouth;
-
+    public int[] prices;
     [Header("Debug")]
     public float valuesRange = 20;
     public float fontSize = 15;
@@ -92,6 +92,7 @@ public class WeaponsData : MonoBehaviour
                 module.damage = dmg;
                 module.knockback = kbk;
                 module.speed = spd;
+                module.cost = prices[i-1];
 
                 manager.shopInventory.leftArmModules.Add(module);
                 manager.shopInventory.rightArmModules.Add(module);
