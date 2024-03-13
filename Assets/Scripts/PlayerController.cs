@@ -1,8 +1,10 @@
-using Unity.Burst.CompilerServices;
+using System;
+using System.Collections;
 using UnityEngine;
-using UnityEngine.ProBuilder;
+using UnityEngine.Rendering;
+using static IEntity;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IEntity
 {
     [Header("Components")]
     [HideInInspector] public CharacterController controller;
@@ -110,6 +112,9 @@ public class PlayerController : MonoBehaviour
     static int rightAttackSpeedHash = Animator.StringToHash("Right Attack Speed");
     static int attackLeftHash = Animator.StringToHash("Attack Left");
     static int attackRightHash = Animator.StringToHash("Attack Right");
+    
+    static int hitHash = Animator.StringToHash("Hit");
+    static int dieHash = Animator.StringToHash("Die");
     #endregion
 
     void Start()
@@ -118,6 +123,7 @@ public class PlayerController : MonoBehaviour
 
         camAnchor = GameObject.Find("Cam Anchor").transform;
         mainCamera = GameObject.Find("Creature Camera").GetComponent<Camera>();
+        AudioManager.Instance.playerListener = mainCamera.GetComponent<AudioListener>();
 
         animator.SetFloat(speedHash, 0);
         animator.SetFloat(yVelHash, 0);
@@ -179,10 +185,10 @@ public class PlayerController : MonoBehaviour
             if (!lockRotation)
             {
                 move = Mathf.Abs(x) > 0 || Mathf.Abs(z) > 0 ? lastDir : transform.forward;
-                move *= (attackPushTimer / attackPushDuration) + inputDir.normalized.magnitude * .1f;
+                move *= (attackPushTimer / attackPushDuration) * inputDir.normalized.magnitude + .1f;
 
-                if(move != Vector3.zero)
-                    targetRotation = Quaternion.LookRotation(lastDir.normalized + inputDir.normalized * .1f);
+                if (inputDir.normalized.magnitude != 0)
+                    targetRotation = Quaternion.LookRotation(lastDir.normalized);
             }
             else
                 targetRotation = Quaternion.LookRotation(camForward);
@@ -205,6 +211,8 @@ public class PlayerController : MonoBehaviour
         #region jump
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
+            if(speed <= 0)
+                velocity = transform.forward * (5 + inputDir.magnitude * 2);
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * (gravity * gravityMultiplier));
             AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.jump);
         }
@@ -274,6 +282,8 @@ public class PlayerController : MonoBehaviour
         #region apply gravity
         if (isGrounded && velocity.y < 0)
         {
+            velocity.x = 0;
+            velocity.z = 0;
             velocity.y = -groundedYVel;
         }
 
@@ -418,7 +428,7 @@ public class PlayerController : MonoBehaviour
     }
     public void ResetCombo(int i)
     {
-        if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i)
+        if ((currAttackSide == 0 ? dominantLeft : dominantRight) == i || i == -1)
         {
             ResetCombo();
         }
@@ -431,6 +441,7 @@ public class PlayerController : MonoBehaviour
         canAttack = true;
         animator.SetInteger(comboHash, combo);
         enemyDirection = Vector3.zero;
+        animator.SetBool(hitHash, false);
     }
     public void CanAttackAgain(int i)
     {
@@ -514,11 +525,11 @@ public class PlayerController : MonoBehaviour
 
             if (hitCount > 0)
             {
-                for (int j = 0; j < results.Length; j++)
+                for (int j = 0; j < hitCount; j++)
                 {
                     if (results[j].collider != null)
                     {
-                        if (results[j].collider.TryGetComponent(out IDamagable hitable))
+                        if (results[j].collider.TryGetComponent(out IEntity hitable))
                         {
                             hitable.Damage(damage, explosionForce * knockback, explosionUpward);
                             enemyDirection = (results[j].transform.position - transform.position).normalized;
@@ -540,6 +551,40 @@ public class PlayerController : MonoBehaviour
             Bullet newBullet = Instantiate(bulletPrefab, boneToUse.position + boneToUse.up, Quaternion.LookRotation(dir)).GetComponent<Bullet>();
             newBullet.SetBullet(damage, 100, dir); //TODO: adjust bullet speed
         }
+    }
+
+    public void Damage(float damage, float explosionForce = 10, float explosionUpward = 1, DamageSource source = DamageSource.PLAYER)
+    {
+        //TODO:
+        if (source == DamageSource.PLAYER || !isPlaying) return;
+        
+        AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.hurt.RandomElement(), .7f);
+        
+        curHp -= (int)damage - (int)(damage * defense);
+        curHp = Mathf.Clamp(curHp, 0, maxHp);
+        
+        if(curHp <= 0)
+        {
+            animator.SetBool(dieHash, true);
+            animator.SetBool(hitHash, false);
+            animator.SetFloat(speedHash, 0);
+            isPlaying = false;
+            GameManager.Instance.Die();
+            return;
+        }
+
+        animator.SetBool(hitHash, true);
+        GameManager.Instance.uiManager.UpdateHpCircles(curHp);
+    }
+
+    public void ResetEntity()
+    {
+        
+    }
+
+    public void ToggleEntity(bool enable)
+    {
+        throw new System.NotImplementedException();
     }
 
 #if UNITY_EDITOR

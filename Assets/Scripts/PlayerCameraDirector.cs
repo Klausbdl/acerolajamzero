@@ -9,9 +9,9 @@ public class PlayerCameraDirector : MonoBehaviour
     public float yRot, yRotSpeed, yLerpSpeed;
     public Vector3 camLocalOffset;
     public float maxZoom = 10;
-    float targetX, targetY, targetZoom;
+    public float targetX, targetY, targetZoom;
     float targetOffsetX, targetOffsetY, targetOffsetZ;
-    bool targetOffset;
+    public bool targetOffset;
     public bool TargetOffset
     {
         get { return targetOffset; }
@@ -80,14 +80,14 @@ public class PlayerCameraDirector : MonoBehaviour
 
         xRot += Time.unscaledDeltaTime * xRotSpeed;
         xRot = Mathf.Clamp(xRot, -89f, 89f);
-        if (xLerpSpeed > 0) xRot = Mathf.Lerp(pc.xRot, targetX, Time.unscaledDeltaTime * xLerpSpeed);
+        if (targetOffset) xRot = Mathf.Lerp(pc.xRot, targetX, Time.unscaledDeltaTime * xLerpSpeed);
         pc.xRot = xRot;
         
         yRot += Time.unscaledDeltaTime * yRotSpeed;
         if (yRot < 0) yRot = 360;
         if (yRot > 360) yRot = 0;
 
-        if (yLerpSpeed > 0) yRot = Mathf.Lerp(pc.yRot, targetY, Time.unscaledDeltaTime * yLerpSpeed);
+        if (targetOffset) yRot = Mathf.Lerp(pc.yRot, targetY, Time.unscaledDeltaTime * yLerpSpeed);
         pc.yRot = yRot;
 
         if (targetOffset) camLocalOffset = new Vector3(targetOffsetX, targetOffsetY, targetOffsetZ);

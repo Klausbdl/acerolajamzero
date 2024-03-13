@@ -5,10 +5,7 @@ using UnityEngine.UI;
 using System.IO;
 using System.Collections.Generic;
 using TMPro;
-using Unity.Burst.Intrinsics;
-using Unity.VisualScripting;
 using System.Linq;
-using UnityEditor.Rendering;
 
 
 public class GameManager : Singleton<GameManager>
@@ -16,6 +13,7 @@ public class GameManager : Singleton<GameManager>
     [Header("Prefabs")]
     public GameObject[] playerPrefabs;
     public Transform playerPosSpawn;
+    public Transform playerEndTeleport;
 
     [Header("Materials")]
     public Material daySkyMaterial;
@@ -26,7 +24,10 @@ public class GameManager : Singleton<GameManager>
     public WeaponsData weaponData;
     public LegsData legsData;
     public PlayerController playerController;
+    public PlayerCameraDirector playerCameraDirector;
     public GameObject roomObject;
+    public GameObject doorObject;
+    public GameObject creaturaObject;
     public UIManager uiManager;
     public Light sunLight;
     public AudioManager audioManager;
@@ -48,8 +49,8 @@ public class GameManager : Singleton<GameManager>
     private float runTime = 0f;
     public Inventory shopInventory;
     public int currentLevel = 0;
-    public List<Enemy> enemiesAlive = new List<Enemy>();
-    public List<Enemy> enemiesDead = new List<Enemy>();
+    public List<GameObject> enemiesAlive = new List<GameObject>();
+    public List<GameObject> enemiesDead = new List<GameObject>();
     public int oolCollected;
 
     //debug
@@ -73,15 +74,7 @@ public class GameManager : Singleton<GameManager>
             level.SetActive(false);
         }
 
-        AudioManager.Instance.PlayAudio(audioLibrary.computerHumming, AudioManager.AudioType.MUSIC, 2);
-
-        //StartCoroutine(LateStart());
-    }
-
-    IEnumerator LateStart()
-    {
-        yield return new WaitForEndOfFrame();
-        
+        audioManager.PlayAudio(audioLibrary.computerHumming, AudioManager.AudioType.MUSIC, 2);
     }
 
     public void Update()
@@ -94,7 +87,7 @@ public class GameManager : Singleton<GameManager>
         debugUpdateString += $"\nSun - rot:{sunLight.transform.rotation.eulerAngles} intensity:{sunLight.intensity}";
 
 
-        if (Input.GetButtonDown("Pause"))
+        if (Input.GetButtonDown("Pause") && inRun)
         {
             pause = !pause;
             if (pause)
@@ -160,6 +153,8 @@ public class GameManager : Singleton<GameManager>
     IEnumerator CloseGameRoutine()
     {
         Debug.Log("Begin Close Game Coroutine");
+        foreach (var m in audioLibrary.mainMenu)
+            audioManager.StopAudio(m, 2, false, 0);
         yield return new WaitForSeconds(5);
         AudioManager.Instance.PlayAudio(audioLibrary.computerHumming, AudioManager.AudioType.MUSIC, 1);
         Debug.Log("End Close Game Coroutine");
@@ -250,16 +245,7 @@ public class GameManager : Singleton<GameManager>
 
         //TODO: DEBUG
         #region debug
-        //currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[3]);
-        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[5]);
-        //currentSave.playerInventory.leftArmModules.Add(shopInventory.leftArmModules[1]);
-        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[11]);
-        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[1]);
-        //currentSave.playerInventory.rightArmModules.Add(shopInventory.rightArmModules[2]);
-        //currentSave.playerInventory.legModules.Add(shopInventory.legModules[1]);
-        //currentSave.playerInventory.legModules.Add(shopInventory.legModules[2]);
-        //currentSave.playerInventory.legModules.Add(shopInventory.legModules[3]);
-        currentSave.attributes.currency = 999999;
+        //currentSave.attributes.currency = 999999;
         #endregion
 
         #region spawn player
@@ -303,7 +289,7 @@ public class GameManager : Singleton<GameManager>
         canvasAnimator.SetTrigger("Start Game");
 
         //audios
-        audioManager.oneShotMusic.PlayOneShot(audioLibrary.transition);
+        audioManager.oneShotMusic.PlayOneShot(audioLibrary.transition, 0.5f);
 
         AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[0], AudioManager.AudioType.MUSIC, 1, true, 3, 1);
         AudioManager.Instance.PlayAudio(audioLibrary.mainMenu[2], AudioManager.AudioType.MUSIC, 1, true, 3, 1);
@@ -488,12 +474,24 @@ public class GameManager : Singleton<GameManager>
         yield return new WaitForEndOfFrame();
         levels[currentLevel].GetComponentInChildren<ReflectionProbe>().RenderProbe();
 
-        enemiesAlive = levels[currentLevel].GetComponentsInChildren<Enemy>().ToList();
-        enemiesDead.Clear();
+        enemiesAlive = levels[currentLevel].GetComponentsInChildren<IEntity>()
+            .Select(obj => obj.gameObject)
+            .ToList();
+
+        foreach (var e in enemiesAlive)
+            e.SetActive(false);
+
+            enemiesDead.Clear();
         uiManager.enemyCounterText.text = enemiesAlive.Count.ToString();
         #endregion
-        
+
+        uiManager.currencyText.text = "0";
+
         yield return new WaitForSeconds(3);
+        //audio listener
+        audioManager.mainCameraListener.enabled = false;
+        audioManager.playerListener.enabled = true;
+
         Debug.Log("Setting up player");
         #region player setup
         playerController.controller.enabled = false;
@@ -513,36 +511,48 @@ public class GameManager : Singleton<GameManager>
         UpdatePlayerVariables();
         #endregion
 
-        inRun = true;
         runTime = 0;
 
         yield return new WaitForSeconds(1.5f);
 
         int hp = 0;
         int maxHp = currentSave.attributes.GetMaxHp();
-        //int ammountToAdd = (int)(0.004f * maxHp + 1.2f);
-        int ammountToAdd = (int)(0.001f * maxHp);
         while (hp < maxHp)
         {
-            if (hp + ammountToAdd > maxHp)
-                break;
-
-            hp += ammountToAdd;
+            hp += 4;
+            
             uiManager.UpdateHpCircles(hp);
 
-            if (hp % 100 == 0)
-            {
+            if(hp % 100 == 0)
                 AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.healthUp);
-            }
 
             yield return new WaitForEndOfFrame();
         }
         
         hp = maxHp;
         uiManager.UpdateHpCircles(hp);
-        AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.healthUp);
-        
+
+        foreach (var e in enemiesAlive)
+        {
+            e.SetActive(true);
+            e.GetComponent<IEntity>().ResetEntity();
+            e.GetComponent<IEntity>().ToggleEntity(true);
+        }
+
+        inRun = true;
+
         Debug.Log("End Start Run Coroutine");
+
+        //DEBUG END RUN EARLY
+
+        //yield return new WaitForEndOfFrame();
+
+        //for (int i = enemiesAlive.Count-1; i >= 0; i--)
+        //{
+        //    GameObject e = enemiesAlive[i];
+        //    KillEnemy(e, 10);
+        //    yield return null;
+        //}
     }
 
     public void PauseRun()
@@ -566,11 +576,119 @@ public class GameManager : Singleton<GameManager>
         Time.timeScale = 1;
     }
 
-    public void KillEnemy(Enemy enemy)
+    public void KillEnemy(GameObject enemy, int ool)
     {
         enemiesAlive.Remove(enemy);
         enemiesDead.Add(enemy);
         uiManager.enemyCounterText.text = enemiesAlive.Count.ToString();
+        oolCollected += ool * 4;
+        uiManager.currencyText.text = oolCollected.ToString();
+
+        if(enemiesAlive.Count == 0)
+        {
+            StartCoroutine(EndingRoutine());
+        }
+    }
+
+    IEnumerator EndingRoutine()
+    {
+        //canvasAnimator.enabled = false;
+        playerController.isPlaying = false;
+        playerController.controller.enabled = false;
+
+        foreach (var m in audioLibrary.gameplay)
+            audioManager.StopAudio(m, 0, false, 0);
+
+        yield return new WaitForEndOfFrame();
+        roomObject.SetActive(true);
+        doorObject.SetActive(true);
+        levels[currentLevel].SetActive(false);
+        playerController.transform.position = playerEndTeleport.position;
+        ChangeSky("night");
+        yield return new WaitForEndOfFrame();
+        playerController.isPlaying = true;
+        playerController.controller.enabled = true;
+        playerController.speed = 5;
+        playerController.jumpHeight = 0;
+        playerController.maxZoom = 6;
+    }
+
+    public void Die()
+    {
+        uiManager.hpCirclesRenderer.circles.Clear();
+        uiManager.hpCirclesRenderer.SetAllDirty();
+        inRun = false;
+        canvasAnimator.SetTrigger("End Run");
+        StartCoroutine(DieSequence());
+
+        foreach (var e in enemiesAlive)
+        {
+            e.GetComponent<IEntity>().ToggleEntity(false);
+        }
+    }
+
+    IEnumerator DieSequence()
+    {
+        foreach (var m in audioLibrary.gameplay)
+            audioManager.StopAudio(m, 1, false, 5);
+
+        foreach (var m in audioLibrary.mainMenu)
+            audioManager.PlayAudio(m, AudioManager.AudioType.MUSIC, 1, true, 6);
+        yield return new WaitForSeconds(7);
+        playerController.animator.SetBool("Die", false);
+        playerController.transform.position = playerPosSpawn.transform.position;
+        playerController.transform.rotation = Quaternion.identity;
+        levels[currentLevel].SetActive(false);
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        currentSave.attributes.currency += oolCollected;
+        oolCollected = 0;
+        uiManager.currencyText.text = PlayerAttributes.currency.ToString();
+        SaveGame();
+        yield return new WaitForSeconds(1);
+        playerCameraDirector.xRot = 0;
+        playerCameraDirector.xRotSpeed = 0;
+        playerCameraDirector.XLerpSpeed = 0;
+        uiManager.UpdateLevelUp();
+        uiManager.UpdateArmShop("slots");
+        uiManager.UpdateLegShop("wheel");
+    }
+
+    public void StopPlayer()
+    {
+        playerController.isPlaying = false;
+        playerController.animator.SetFloat("Speed", 0);
+        currentSave.attributes.currency += oolCollected;
+        SaveGame();
+        audioManager.PlayAudio(audioLibrary.computerHumming, AudioManager.AudioType.MUSIC, 0);
+    }
+
+    public void ToggleLaCreatura(int i)
+    {
+        switch (i)
+        {
+            case 0: //make aberration appear
+                creaturaObject.SetActive(true);
+                audioManager.PlayAudio(audioLibrary.hit[6], AudioManager.AudioType.FX, 0, true, 0, .2f);
+                break;
+            case 1: //close if bad ending
+                if (PlayerAttributes.Level > 100)
+                    QuitApplication();
+                break;
+            case 2: //continue through the animation
+                creaturaObject.SetActive(false);
+                playerController.gameObject.SetActive(false);
+                audioManager.StopAudio(audioLibrary.computerHumming, .1f, true);
+                audioManager.StopAudio(audioLibrary.hit[6], 0, true);
+                audioManager.PlayAudio(audioLibrary.birds, AudioManager.AudioType.MUSIC, 1);
+                Camera.main.backgroundColor = Color.white;
+                break;
+            case 3: //end the app
+                QuitApplication();
+                break;
+            default:
+                break;
+        }
     }
     //-------------------------------------------------------------------------- animation triggers
     public void ChangeSky(string sky)
@@ -581,7 +699,7 @@ public class GameManager : Singleton<GameManager>
             case "day":
                 Debug.Log("Changing skybox to DAY");
                 roomObject.SetActive(false);
-                sunLight.transform.rotation = Quaternion.Euler(95, 0, 0);
+                sunLight.transform.rotation = Quaternion.Euler(95, -30, 0);
                 sunLight.intensity = 1;
                 RenderSettings.skybox = daySkyMaterial;
                 break;

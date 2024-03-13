@@ -1,0 +1,49 @@
+Credits.txt
+
+---------------------------------------------------
+<b>UI Sound Effects:</b>
+-Kenney
+-https://freesound.org/people/khenshom/sounds/565202/
+
+<b>Music:</b>
+-Computer humming - https://freesound.org/people/Caitlin_100/sounds/365486/
+-Main menu/gameplay - https://freesound.org/people/josefpres/ - "8 bit game loop"
+
+<b>Textures:</b>
+Kenney
+textures.com
+
+<b>Images:</b>
+https://www.pexels.com/pt-br/procurar/wings%20angel/
+https://www.pexels.com/photo/a-close-up-of-womens-eye-in-the-sunlight-16069405/
+https://www.pexels.com/photo/unrecognizable-boy-in-angel-wings-7139944/
+https://www.pexels.com/photo/close-up-of-a-brown-eye-19213523/
+
+
+
+game music 2 menu
+game music 4 shop
+music 10 gameplay
+
+
+TODO:
+
+automatic scrollbar when using controller
+
+continuar sistema de morrer
+continuar torre
+
+
+
+0 start button
+1 new game button
+2 start run button
+3 gameplay button
+4 options button
+5 inventory button
+6 stats button
+
+0: equip module
+1: buy module
+2: button click
+3: button back

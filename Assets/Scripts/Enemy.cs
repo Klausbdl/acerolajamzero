@@ -1,26 +1,34 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
+using static IEntity;
 
-public class Enemy : MonoBehaviour, IDamagable
+public class Enemy : MonoBehaviour, IEntity
 {
     NavMeshAgent agent;
     Rigidbody rb;
-    public float maxHp = 5;
+    Animator animator;
+    public SpriteRenderer spriteRenderer;
+    public float originalHp = 5;
     public float hp;
     public float speed;
+    public float damage;
     public LayerMask groundLayer;
-    Vector3 originalPos;
-
-    bool canBeHit = true;
+    public LayerMask hitMask;
+    
     public float recoverDuration = 3;
     public float recoverTimer;
+    bool canBeHit = true;
+    float attackTimer = 0;
 
+    Vector3 originalPos;
+    Transform playerTransform;
+
+    public GameObject spawnParticle;
     public GameObject hitParticle;
     public GameObject dieParticle;
 
-    [SerializeField] private Shader shader;
-    Material[] materials;
+    Collider[] hits = new Collider[10];
 
 #if UNITY_EDITOR
     string debugString;
@@ -31,64 +39,83 @@ public class Enemy : MonoBehaviour, IDamagable
         agent = GetComponent<NavMeshAgent>();
         agent.speed = speed;
         rb = GetComponent<Rigidbody>();
+        animator = GetComponent<Animator>();
         gameObject.layer = 7;
-        hp = maxHp;
         originalPos = transform.position;
-        //materials
-        materials = GetComponentInChildren<MeshRenderer>().materials;
-
-        foreach (Material mat in materials)
-        {
-            if (mat.shader == shader)
-            {
-                mat.SetFloat("_Hurt_Strength", 0);
-                mat.SetFloat("_Hurt_Noise_Speed", 0);
-            }
-        }
     }
 
-    void ResetEnemey()
+    public void ResetEntity()
     {
-        hp = maxHp;
+        hp = GetMaxHp() - 4;
         transform.position = originalPos;
+        agent.enabled = true;
+        rb.isKinematic = true;
+        canBeHit = true;
+        animator.SetTrigger("Hit");
+        damage *= 1 + (GameManager.Instance.PlayerAttributes.Level / 200f);
+    }
 
-        foreach (Material mat in materials)
-        {
-            if (mat.shader == shader)
-            {
-                mat.SetFloat("_Hurt_Strength", 0);
-                mat.SetFloat("_Hurt_Noise_Speed", 0);
-            }
-        }
+    public float GetMaxHp()
+    {
+        //y\ =v\cdot.2 + d\cdot.3 + a\cdot.2 + s\cdot.4 + D\cdot.4 + j\cdot.2\ +\ 3
+        PlayerAttributes p = GameManager.Instance.PlayerAttributes;
+        return p.vitality * .2f + p.defense * .3f + p.agility * .2f + p.strength * .4f + p.dexterity * .4f + p.jump * .2f + originalHp;
     }
 
     void Update()
     {
-        if (agent.enabled)
-            GoToDestination(GameManager.Instance.playerController.transform.position);
-    }
-
-    public virtual void Damage(float damage, float force, float upward)
-    {
-        hp -= damage;
-
-        Instantiate(hitParticle, transform.position + new Vector3(0, 1.17f, 0), Quaternion.identity);
-
-        foreach (Material mat in materials)
+        if (Vector3.Distance(originalPos, playerTransform.position) < 150)
         {
-            if (mat.shader == shader)
+            if (agent.enabled == false) agent.enabled = true;
+
+            GoToDestination(playerTransform.position);
+        }
+        else
+        {
+            if (agent.enabled == true)
+                agent.enabled = false;
+        }
+        
+        if (agent.enabled)
+        {
+            attackTimer -= Time.deltaTime;
+
+            if(attackTimer < 0)
             {
-                mat.SetFloat("_Hurt_Strength", Mathf.Lerp(0, 0.6f, 1 - hp / maxHp));
-                mat.SetFloat("_Hurt_Noise_Speed", Mathf.Lerp(0, 0.1f, 1 - hp / maxHp));
+                Vector3 hitPos = transform.position + new Vector3(0, 2, 0) + transform.forward;
+                int hitCount = Physics.OverlapSphereNonAlloc(hitPos, 5, hits, hitMask);
+
+                for (int i = 0; i < hitCount; i++)
+                {
+                    if (hits[i].TryGetComponent(out IEntity d) && canBeHit)
+                    {
+                        d.Damage(damage, 0, 0, DamageSource.ENEMY);
+                    }
+                }
+                attackTimer = 1f;
             }
         }
+        spriteRenderer.transform.rotation = Quaternion.identity;
+    }
+
+    public void Damage(float damage, float force, float upward, DamageSource source = DamageSource.PLAYER)
+    {
+        if (source == DamageSource.ENEMY) return;
+        hp -= damage;
+
+        animator.SetTrigger("Hit");
+        Instantiate(hitParticle, transform.position + new Vector3(0, 4, 0), Quaternion.identity);
+        
+        float volume = Mathf.Clamp01(Vector3.Distance(transform.position, GameManager.Instance.playerController.transform.position) / 50f);
 
         if (hp <= 0)
         {
-            GameManager.Instance.KillEnemy(this);
+            GameManager.Instance.KillEnemy(gameObject, (int)GetMaxHp());
             gameObject.SetActive(false);
-            Instantiate(dieParticle, transform.position, Quaternion.identity);
-            AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.enemyDie);
+            Instantiate(dieParticle, transform.position + new Vector3(0, 4, 0), Quaternion.identity);
+            
+            AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.enemyDie, 1 - volume);
+            StopAllCoroutines();
             return;
         }
 
@@ -103,11 +130,13 @@ public class Enemy : MonoBehaviour, IDamagable
 
         rb.AddForce(impulseForce, ForceMode.Impulse);
 
-        AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.hit.RandomElement());
+        AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.hit.RandomElement(), 1 - volume);
     }
 
     IEnumerator TakeDamage(float damage, float force, float upward)
     {
+        spriteRenderer.color = Color.red;
+
         canBeHit = false;
 
         while (agent.enabled)
@@ -123,6 +152,8 @@ public class Enemy : MonoBehaviour, IDamagable
 
         yield return new WaitForEndOfFrame();
 
+        spriteRenderer.color = Color.white;
+
         Vector3 impulseForce = (transform.position - GameManager.Instance.playerController.transform.position).normalized;
         impulseForce *= force;
         impulseForce.y = upward;
@@ -136,7 +167,7 @@ public class Enemy : MonoBehaviour, IDamagable
             debugString = recoverTimer.ToString(); //TODO: debug
 #endif
 
-            if (Physics.CheckSphere(transform.position, .5f, groundLayer) && recoverTimer < 0)
+            if ((Physics.CheckSphere(transform.position, .5f, groundLayer) && recoverTimer < 0) || recoverTimer < -20f )
             {
                 agent.enabled = true;
                 rb.isKinematic = true;
@@ -165,7 +196,18 @@ public class Enemy : MonoBehaviour, IDamagable
             Gizmos.DrawWireSphere(transform.position, .5f);
     }
 
-#if UNITY_EDITOR
+    public void ToggleEntity(bool enable)
+    {
+        agent.enabled = enable;
+        rb.isKinematic = true;
+
+        playerTransform = GameManager.Instance.playerController.transform;
+
+        if (enable)
+            Instantiate(spawnParticle, transform.position + new Vector3(0, 2, 0), Quaternion.identity);
+    }
+    
+    #if UNITY_EDITOR
     private void OnGUI()
     {
         Rect labelRect = new Rect(500, 100, 600, 1000);
@@ -176,6 +218,14 @@ public class Enemy : MonoBehaviour, IDamagable
         s += "\n" + debugString;
 
         GUI.Label(labelRect, s);
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(originalPos, 5);
+        Gizmos.color = Color.white;
+        Gizmos.DrawWireSphere(transform.position + new Vector3(0, 2, 0) + transform.forward, 5);
     }
 #endif
 }

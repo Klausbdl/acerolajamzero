@@ -5,9 +5,20 @@ public interface IInteractable
     public void Interact();
 }
 
-public interface IDamagable
+public interface IEntity
 {
-    //public abstract void Damage();
-    
-    public void Damage(float damage, float explosionForce = 10, float explosionUpward = 1);
+    public enum DamageSource
+    {
+        ENEMY,
+        PLAYER,
+        ENVIRONMENT
+    }
+
+    GameObject gameObject { get; }
+
+    public void Damage(float damage, float explosionForce = 10, float explosionUpward = 1, DamageSource source = DamageSource.PLAYER);
+
+    public void ResetEntity();
+
+    public void ToggleEntity(bool enable);
 }

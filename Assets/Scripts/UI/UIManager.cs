@@ -402,15 +402,17 @@ public class UIManager : MonoBehaviour
         currentArmModule = module;
         
         bool canBuy = GameManager.Instance.PlayerAttributes.currency >= ArmModuleCost;
-        buyLeftButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.leftArmModules.Any(x => x.name.ToLower() == name.ToLower());
-        buyRightButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.rightArmModules.Any(x => x.name.ToLower() == name.ToLower());
+        bool boughtAllLeft = GameManager.Instance.currentSave.playerInventory.leftArmModules.Any(x => x.name.ToLower() == name.ToLower());
+        bool boughtAllRight = GameManager.Instance.currentSave.playerInventory.rightArmModules.Any(x => x.name.ToLower() == name.ToLower());
+        buyLeftButton.interactable = canBuy && !boughtAllLeft;
+        buyRightButton.interactable = canBuy && !boughtAllRight;
         
         armsDisplayInfoText.text = $"<b>{module.name}</b>\r\n  {module.moduleType.ToSafeString()}" +
             $"\r\n\r\n<indent=0%>Damage:<indent=70%>{(module.damage*10).ToString("0.00")}" +
             $"\r\n<indent=0%>Knockback:<indent=70%>{(module.knockback * 10).ToString("0.00")}" +
             $"\r\n<indent=0%>Atk Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}" +
             $"\r\n<indent=0%>" +
-            $"\r\nCost: {(buyLeftButton.interactable || buyRightButton.interactable ? ArmModuleCost : "-")}";
+            $"\r\nCost: {(!boughtAllLeft || !boughtAllRight ? ArmModuleCost : "-")}";
     }
     public void BuyArmModule(int side)
     {
@@ -455,13 +457,14 @@ public class UIManager : MonoBehaviour
         currentLegModule = module;
 
         bool canBuy = GameManager.Instance.PlayerAttributes.currency >= LegModuleCost;
-        buyLegButton.interactable = canBuy && !GameManager.Instance.currentSave.playerInventory.legModules.Any(x => x.name.ToLower() == name.ToLower());
+        bool boughtAll = GameManager.Instance.currentSave.playerInventory.legModules.Any(x => x.name.ToLower() == name.ToLower());
+        buyLegButton.interactable = canBuy && !boughtAll;
 
         legsDisplayInfoText.text = $"<b>{module.name}</b>" +
-            $"\r\n\r\n<indent=0%>Speed:<indent=70%>{(module.speed * 10).ToString("0.00")}" +
-            $"\r\n<indent=0%>Jump:<indent=70%>{(module.jump * 10).ToString("0.00")}" +
+            $"\r\n\r\n<indent=0%>Speed:<indent=70%>{module.speed.ToString("0.00")}" +
+            $"\r\n<indent=0%>Jump:<indent=70%>{module.jump.ToString("0.00")}" +
             $"\r\n\r\n<indent=0%>" +
-            $"\r\nCost: {(buyLegButton.interactable ? LegModuleCost : "-")}";
+            $"\r\nCost: {(!boughtAll ? LegModuleCost : "-")}";
     }
     public void BuyLegModule()
     {
@@ -478,7 +481,7 @@ public class UIManager : MonoBehaviour
     {
         int level = GameManager.Instance.currentSave.attributes.Level;
         nextLevelCost = (int)(0.0012f * level * level) + (int)(1.35f * level) + 10;
-        costResultText.text = $"<align=left>Level<line-height=0%>\r\n<align=right>{level}<line-height=110%>\r\n<align=left>Cost<line-height=0%>\r\n<align=right>{nextLevelCost}<line-height=110%>";
+        costResultText.text = $"<align=left>Level<line-height=0%>\r\n<align=right>{level}<line-height=110%>\r\n<align=left>Cost<line-height=0%>\r\n<align=right>{(level < 595 ? nextLevelCost : "-")}<line-height=110%>";
 
         for (int i = 0; i < attributesList.Length; i++)
         {
@@ -911,7 +914,7 @@ public class UIManager : MonoBehaviour
     #region pause
     public void OnEndRunClick()
     {
-        leaveRunMessageText.text = $"End run and leave with 50% of OOL?\n{GameManager.Instance.oolCollected / 2}";
+        leaveRunMessageText.text = $"End run and leave with 20% of OOL?\n{GameManager.Instance.oolCollected / 5}";
     }
     #endregion
 }

@@ -15,7 +15,8 @@ public class AudioManager : Singleton<AudioManager>
     public AudioMixerGroup[] mixers;
     public AudioSource oneShotMusic;
     public AudioSource oneShotFx;
-
+    public AudioListener mainCameraListener;
+    public AudioListener playerListener;
     public override void Awake()
     {
         base.Awake();
@@ -46,8 +47,9 @@ public class AudioManager : Singleton<AudioManager>
 
     public void StopAudio(AudioClip clip, float fadeDuration, bool destroy = true, float delay = 0, bool stopOnZero = true)
     {
-        foreach(var s in sources)
+        for (int i = sources.Count-1; i >= 0; i--)
         {
+            AudioSource s = sources[i];
             if (s.clip == clip)
             {
                 StartCoroutine(s.FadeAudioSource(0, fadeDuration, destroy, delay, stopOnZero));
@@ -68,4 +70,5 @@ public class AudioManager : Singleton<AudioManager>
     public void PlayEquipModule() => oneShotFx.PlayOneShot(library.equipModule);
     public void PlayUnequipModule() => oneShotFx.PlayOneShot(library.unequipModule, 2.5f);
     public void PlayMenuAppear() => oneShotFx.PlayOneShot(library.menuAppear);
+    public void PlayDoorSound() => oneShotFx.PlayOneShot(library.doorSound);
 }

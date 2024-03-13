@@ -107,37 +107,37 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -32.3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -54.94
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.02544827
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.99967617
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
@@ -147,7 +147,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -182.916
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
@@ -253,6 +253,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Creature
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: bd1c029762180d24d98ec39e519c0451,
+        type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 2808420808266717315, guid: bd1c029762180d24d98ec39e519c0451,
         type: 3}
@@ -486,7 +491,7 @@ MonoBehaviour:
   rightKnockback: 1
   jumpHeight: 4
   explosionForce: 20
-  explosionUpward: 7
+  explosionUpward: 1
   armsFix:
   - 3
   - 0.0767

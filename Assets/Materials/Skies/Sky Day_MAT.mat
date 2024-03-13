@@ -114,7 +114,7 @@ Material:
     - _Blend: 0
     - _CloudOpacity: 1
     - _Exposure1: 1
-    - _Exposure2: 0
+    - _Exposure2: 1
     - _Exposure3: 0
     - _Glossiness: 0.5
     - _ImageType: 0

@@ -23,7 +23,7 @@ public class Bullet : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.TryGetComponent(out IDamagable hitable))
+        if(other.TryGetComponent(out IEntity hitable))
         {
             hitable.Damage(damage);
             Destroy(gameObject);
