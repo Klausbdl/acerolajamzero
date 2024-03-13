@@ -12,6 +12,7 @@ public class AudioLibrary : MonoBehaviour
     [Header("Player")]
     public AudioClip[] footsteps;
     public AudioClip[] whoosh;
+    public AudioClip[] laser;
     public AudioClip jump;
     public AudioClip dash;
     [Header("Combat")]

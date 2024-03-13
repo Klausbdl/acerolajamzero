@@ -425,6 +425,16 @@ public class PlayerController : MonoBehaviour, IEntity
         animator.SetBool(attackRightHash, false);
 
         AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.whoosh.RandomElement());
+        if (currAttackSide == 0)
+        {
+            if(leftShootPercentage >= 0.33f)
+                AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.laser.RandomElement());                
+        }
+        if (currAttackSide == 1)
+        {
+            if (rightShootPercentage >= 0.33f)
+                AudioManager.Instance.oneShotFx.PlayOneShot(AudioManager.Instance.library.laser.RandomElement());
+        }
     }
     public void ResetCombo(int i)
     {

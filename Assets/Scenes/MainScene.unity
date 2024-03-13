@@ -24672,6 +24672,12 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 660bee711c6914a4984d315d69550d22, type: 3}
   - {fileID: 8300000, guid: ae508148a10eb5e4ca295c83e8b9e381, type: 3}
   - {fileID: 8300000, guid: a83593bcdc9929a408f37596843b8c26, type: 3}
+  laser:
+  - {fileID: 8300000, guid: d4744bc25335328438cd2e7cdb1ef8b7, type: 3}
+  - {fileID: 8300000, guid: f5a2f5abc2c4dd049a37275e488c3584, type: 3}
+  - {fileID: 8300000, guid: f967d03b0965b9d45bd3595ae921217b, type: 3}
+  - {fileID: 8300000, guid: bb5349f844daf8344b7cf02bdd0d331f, type: 3}
+  - {fileID: 8300000, guid: 4d2f0c04a2165a642aaebeb01eea6ea4, type: 3}
   jump: {fileID: 8300000, guid: fb7484cb5abca104bac29ab8a017099a, type: 3}
   dash: {fileID: 8300000, guid: 584635780d53c474fbe654247ef8fae4, type: 3}
   hit:
